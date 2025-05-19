@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.jellyfinryan.ui.screens.BrowseScreen
 import com.example.jellyfinryan.ui.screens.HomeScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
 
@@ -44,14 +45,13 @@ fun JellyfinNavHost(
         }
         composable(Screen.Browse.route) { backStackEntry ->
             val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Browse Screen for library: $libraryId")
-            }
+            BrowseScreen(
+                libraryId = libraryId,
+                onItemClick = { backStackEntrySaved ->
+                    navController.navigate("detail/$backStackEntrySaved")
+                }
+            )
         }
-
         composable(Screen.Detail.route) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
             Box(

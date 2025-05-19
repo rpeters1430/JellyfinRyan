@@ -1,18 +1,21 @@
 package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
@@ -72,11 +75,13 @@ fun HomeScreen(
                                         focusedBackground = imageUrl
                                     }
                                 }
-                                .border(
-                                    width = if (isFocused) 3.dp else 0.dp,
-                                    color = Color.White
-                                )
                                 .focusable()
+                                .clip(MaterialTheme.shapes.extraLarge),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            elevation = CardDefaults.elevatedCardElevation(
+                                defaultElevation = 8.dp,
+                                focusedElevation = 12.dp
+                            )
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
                                 if (imageUrl != null) {
@@ -118,9 +123,11 @@ fun HomeScreen(
                     }
                 }
             }
+
             item {
                 Spacer(modifier = Modifier.height(32.dp))
             }
+
             items(libraries) { library ->
                 Column(
                     modifier = Modifier
@@ -128,7 +135,7 @@ fun HomeScreen(
                         .padding(bottom = 24.dp)
                 ) {
                     Text(
-                        text = library.Name,
+                        text = "Recently Added in ${library.Name}",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -137,32 +144,37 @@ fun HomeScreen(
 
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(items) { item ->
-                            Card(
-                                onClick = { onItemClick(item.Id) },
+                            var isFocused by remember { mutableStateOf(false) }
+                            Column(
                                 modifier = Modifier
                                     .width(160.dp)
                                     .onFocusChanged {
+                                        isFocused = it.isFocused
                                         if (it.isFocused) {
                                             focusedBackground = item.getImageUrl(viewModel.getServerUrl())
                                         }
                                     }
-                                    .focusable()
+                                    .focusable(),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Column {
-                                    item.getImageUrl(viewModel.getServerUrl())?.let { url ->
-                                        AsyncImage(
-                                            model = url,
-                                            contentDescription = item.Name,
-                                            modifier = Modifier
-                                                .height(240.dp)
-                                                .fillMaxWidth()
-                                        )
-                                    }
-                                    Text(
-                                        text = item.Name,
-                                        modifier = Modifier.padding(8.dp)
+                                item.getImageUrl(viewModel.getServerUrl())?.let { url ->
+                                    AsyncImage(
+                                        model = url,
+                                        contentDescription = item.Name,
+                                        modifier = Modifier
+                                            .height(240.dp)
+                                            .fillMaxWidth()
+                                            .clip(MaterialTheme.shapes.large)
                                     )
                                 }
+                                Text(
+                                    text = item.Name,
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .padding(top = 4.dp)
+                                        .fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
@@ -171,5 +183,9 @@ fun HomeScreen(
         }
     }
 }
+
+
+
+
 
 
