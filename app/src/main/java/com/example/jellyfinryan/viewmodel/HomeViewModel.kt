@@ -5,9 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.jellyfinryan.api.JellyfinRepository
 import com.example.jellyfinryan.api.model.JellyfinItem
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,31 +15,31 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _libraries = MutableStateFlow<List<JellyfinItem>>(emptyList())
-    val libraries: StateFlow<List<JellyfinItem>> = _libraries.asStateFlow()
+    val libraries: StateFlow<List<JellyfinItem>> = _libraries
 
-    private val _recentItems = MutableStateFlow<List<JellyfinItem>>(emptyList())
-    val recentItems: StateFlow<List<JellyfinItem>> = _recentItems.asStateFlow()
+    private val _recentItemsMap = MutableStateFlow<Map<String, List<JellyfinItem>>>(emptyMap())
+    val recentItemsMap: StateFlow<Map<String, List<JellyfinItem>>> = _recentItemsMap
 
-    private val _continueWatching = MutableStateFlow<List<JellyfinItem>>(emptyList())
-    val continueWatching: StateFlow<List<JellyfinItem>> = _continueWatching.asStateFlow()
+    init {
+        fetchLibraries()
+    }
 
-    fun loadUserViews() {
+    private fun fetchLibraries() {
         viewModelScope.launch {
-            repository.getUserViews().collect { items ->
-                _libraries.value = items
+            repository.getUserViews().collect { views ->
+                _libraries.value = views
+                views.forEach { view ->
+                    fetchRecentItems(view.Id)
+                }
             }
         }
     }
 
-    fun loadRecentItems() {
-        // For now, just use an empty list
-        _recentItems.value = emptyList()
+    private fun fetchRecentItems(libraryId: String) {
+        viewModelScope.launch {
+            repository.getLibraryItems(libraryId).collect { items ->
+                _recentItemsMap.update { it + (libraryId to items) }
+            }
+        }
     }
-
-    fun loadContinueWatching() {
-        // For now, just use an empty list
-        _continueWatching.value = emptyList()
-    }
-
-    fun getServerUrl(): String = repository.getServerUrl()
 }

@@ -88,13 +88,31 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
-        // For now, return empty list
-        emit(emptyList())
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val views = api.getUserViews(
+            userId = userId,
+            authToken = accessToken
+        )
+        emit(views.Items)
     }
 
     suspend fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
-        emit(emptyList())
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val items = api.getItems(
+            userId = userId,
+            parentId = libraryId,
+            sortBy = "DateCreated",
+            sortOrder = "Descending",
+            limit = 10,
+            authToken = accessToken
+        )
+        emit(items.Items)
     }
+
 
     suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
         emit(null)
