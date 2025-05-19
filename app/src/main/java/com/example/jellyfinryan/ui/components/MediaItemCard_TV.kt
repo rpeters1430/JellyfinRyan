@@ -1,10 +1,16 @@
 package com.example.jellyfinryan.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -20,16 +26,23 @@ fun MediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
     Card(
         onClick = onClick,
         modifier = modifier
+            .width(160.dp)
+            .height(260.dp)
+            .scale(if (isFocused) 1.1f else 1f)
+            .focusable()
+            .onFocusChanged { isFocused = it.isFocused },
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column {
-            // Image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(2f/3f)
+                    .aspectRatio(2f / 3f)
             ) {
                 item.getImageUrl(serverUrl)?.let { imageUrl ->
                     AsyncImage(
@@ -51,7 +64,6 @@ fun MediaCard(
                 }
             }
 
-            // Title
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

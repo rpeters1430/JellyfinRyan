@@ -1,8 +1,11 @@
 package com.example.jellyfinryan.api
 
+import android.util.Log
 import com.example.jellyfinryan.api.model.JellyfinItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,11 +26,34 @@ class JellyfinRepository @Inject constructor() {
     fun getServerUrl(): String = serverUrl
 
     suspend fun login(serverUrl: String, username: String, password: String): Result<Boolean> {
-        // For now, just simulate a successful login
-        setServerInfo(serverUrl)
-        userId = "userId"
-        accessToken = "accessToken"
-        return Result.success(true)
+        return try {
+            setServerInfo(serverUrl)
+            Log.d("JellyfinRepository", "Creating Retrofit instance for $serverUrl")
+
+            val retrofit = Retrofit.Builder()
+                .baseUrl("$serverUrl/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+
+            val api = retrofit.create(JellyfinApiService::class.java)
+
+            val authHeader = buildAuthorizationHeader()
+            Log.d("JellyfinRepository", "Sending login request... with header: $authHeader")
+
+            val response = api.authenticateUserByName(
+                authHeader,
+                AuthenticateUserByNameRequest(username, password)
+            )
+
+            accessToken = response.AccessToken
+            userId = response.User.Id
+
+            Log.d("JellyfinRepository", "Login successful, token: $accessToken")
+            Result.success(true)
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Login failed", e)
+            Result.failure(e)
+        }
     }
 
     suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
@@ -46,4 +72,14 @@ class JellyfinRepository @Inject constructor() {
     suspend fun getPlaybackUrl(itemId: String): String? {
         return null
     }
+
+    private fun buildAuthorizationHeader(): String {
+        val app = "JellyfinRyan"
+        val version = "1.0.0"
+        val device = "AndroidTV"
+        val deviceId = "android-emulator" // You can improve this later
+
+        return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
+    }
+
 }

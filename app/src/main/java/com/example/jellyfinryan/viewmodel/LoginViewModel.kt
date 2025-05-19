@@ -1,5 +1,6 @@
 package com.example.jellyfinryan.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinryan.api.JellyfinRepository
@@ -20,8 +21,21 @@ class LoginViewModel @Inject constructor(
 
     fun login(serverUrl: String, username: String, password: String) {
         viewModelScope.launch {
-            // Perform login logic
-            val result: Result<Boolean> = repository.login(serverUrl, username, password)
+            try {
+                Log.d("LoginViewModel", "Starting login...")
+                val result = repository.login(serverUrl, username, password)
+                if (result.isSuccess) {
+                    Log.d("LoginViewModel", "Login succeeded!")
+                    _loginSuccess.emit(true)
+                } else {
+                    Log.e("LoginViewModel", "Login failed: ${result.exceptionOrNull()?.message}")
+                    _loginSuccess.emit(false)
+                }
+            } catch (e: Exception) {
+                Log.e("LoginViewModel", "Exception during login", e)
+                _loginSuccess.emit(false)
+            }
         }
     }
+
 }
