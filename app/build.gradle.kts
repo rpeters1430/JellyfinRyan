@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
-    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -37,10 +37,6 @@ android {
     buildFeatures {
         compose = true
     }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
 }
 
 dependencies {
@@ -60,16 +56,13 @@ dependencies {
 
     // TV-specific dependencies - using an older version for compatibility
     implementation(libs.androidx.tv.foundation)
-    implementation(libs.androidx.tv.material.v110alpha01)
+    implementation(libs.androidx.tv.material)
 
     // Dependency Injection - using an older version for better compatibility
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.coil.compose)
-    implementation(libs.hilt.android.v244)
-    kapt(libs.hilt.android.compiler.v244)
-    implementation(libs.androidx.hilt.navigation.compose.v100)
 
     // Testing
     testImplementation(libs.junit)
