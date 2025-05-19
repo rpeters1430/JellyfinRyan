@@ -2,19 +2,19 @@ package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
 import com.example.jellyfinryan.viewmodel.LoginViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -22,105 +22,77 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit
 ) {
-    var serverUrl by remember { mutableStateOf("http://") }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var serverUrl by remember { mutableStateOf(TextFieldValue("")) }
+    var username by remember { mutableStateOf(TextFieldValue("")) }
+    var password by remember { mutableStateOf(TextFieldValue("")) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    val loginState by viewModel.loginState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(loginState) {
-        if (loginState.isLoggedIn) {
-            onLoginSuccess()
+    // 🔁 Listen for login success
+    LaunchedEffect(Unit) {
+        viewModel.loginSuccess.collectLatest { success ->
+            if (success) {
+                onLoginSuccess()
+            }
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                modifier = Modifier
-                    .width(480.dp)
-                    .padding(16.dp)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item {
+            OutlinedTextField(
+                value = serverUrl,
+                onValueChange = { serverUrl = it },
+                label = { Text("Server URL") },
+                modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
+                singleLine = true
+            )
+        }
+
+        item {
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username") },
+                modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
+                singleLine = true
+            )
+        }
+
+        item {
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true
+            )
+        }
+
+        item {
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        isLoading = true
+                        viewModel.login(serverUrl.text, username.text, password.text)
+                        isLoading = false
+                    }
+                },
+                enabled = serverUrl.text.isNotBlank() && username.text.isNotBlank() && password.text.isNotBlank()
             ) {
-                LazyColumn(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    item {
-                        Text(
-                            text = "Connect to Jellyfin",
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(bottom = 24.dp)
-                        )
-                    }
+                Text("Connect")
+            }
+        }
 
-                    item {
-                        OutlinedTextField(
-                            value = serverUrl,
-                            onValueChange = { serverUrl = it },
-                            label = { Text("Server URL") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
-
-                    item {
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it },
-                            label = { Text("Username") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
-
-                    item {
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Password") },
-                            visualTransformation = PasswordVisualTransformation(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 24.dp),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
-                        )
-                    }
-
-                    item {
-                        Button(
-                            onClick = {
-                                viewModel.login(serverUrl, username, password)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !loginState.isLoading && serverUrl.isNotBlank() && username.isNotBlank()
-                        ) {
-                            if (loginState.isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text("Connect")
-                            }
-                        }
-                    }
-
-                    if (loginState.errorMessage != null) {
-                        item {
-                            Text(
-                                text = loginState.errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(top = 16.dp)
-                            )
-                        }
-                    }
+        if (isLoading) {
+            item {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    CircularProgressIndicator()
                 }
             }
         }

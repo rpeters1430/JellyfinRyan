@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinryan.api.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,35 +15,18 @@ class LoginViewModel @Inject constructor(
     private val repository: JellyfinRepository
 ) : ViewModel() {
 
-    private val _loginState = MutableStateFlow(LoginState())
-    val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
-
-    init {
-        if (repository.isLoggedIn()) {
-            _loginState.value = LoginState(isLoggedIn = true)
-        }
-    }
+    private val _loginSuccess = MutableSharedFlow<Boolean>()
+    val loginSuccess: SharedFlow<Boolean> = _loginSuccess.asSharedFlow()
 
     fun login(serverUrl: String, username: String, password: String) {
         viewModelScope.launch {
-            _loginState.value = LoginState(isLoading = true)
-
+            // Perform login logic
             val result = repository.login(serverUrl, username, password)
-
-            result.fold(
-                onSuccess = {
-                    _loginState.value = LoginState(isLoggedIn = true)
-                },
-                onFailure = { e ->
-                    _loginState.value = LoginState(errorMessage = e.message ?: "Login failed")
-                }
-            )
+            _loginSuccess.emit(result.isSuccessful)
         }
     }
-}
 
-data class LoginState(
-    val isLoading: Boolean = false,
-    val isLoggedIn: Boolean = false,
-    val errorMessage: String? = null
-)
+    suspend fun isLoggedIn(): Boolean {
+        return repository.isLoggedIn()
+    }
+}
