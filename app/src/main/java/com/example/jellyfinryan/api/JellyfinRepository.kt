@@ -2,15 +2,20 @@ package com.example.jellyfinryan.api
 
 import android.util.Log
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.data.preferences.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.example.jellyfinryan.api.AuthenticateUserByNameRequest
+
 
 @Singleton
-class JellyfinRepository @Inject constructor() {
+class JellyfinRepository @Inject constructor(
+    private val dataStoreManager: DataStoreManager
+) {
     private var serverUrl: String = ""
     private var userId: String = ""
     private var accessToken: String = ""
@@ -28,18 +33,13 @@ class JellyfinRepository @Inject constructor() {
     suspend fun login(serverUrl: String, username: String, password: String): Result<Boolean> {
         return try {
             setServerInfo(serverUrl)
-            Log.d("JellyfinRepository", "Creating Retrofit instance for $serverUrl")
-
-            val retrofit = Retrofit.Builder()
-                .baseUrl("$serverUrl/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-
+            val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
 
+            // Construct the X-Emby-Authorization header
             val authHeader = buildAuthorizationHeader()
-            Log.d("JellyfinRepository", "Sending login request... with header: $authHeader")
 
+            // Send authentication request with header and body
             val response = api.authenticateUserByName(
                 authHeader,
                 AuthenticateUserByNameRequest(username, password)
@@ -48,12 +48,43 @@ class JellyfinRepository @Inject constructor() {
             accessToken = response.AccessToken
             userId = response.User.Id
 
-            Log.d("JellyfinRepository", "Login successful, token: $accessToken")
+            // Save credentials
+            dataStoreManager.saveCredentials(
+                url = serverUrl,
+                userId = userId,
+                accessToken = accessToken
+            )
+
             Result.success(true)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "Login failed", e)
             Result.failure(e)
         }
+    }
+
+    suspend fun tryAutoLogin(): Boolean {
+        val creds = dataStoreManager.getCredentials()
+        if (creds.serverUrl != null && creds.userId != null && creds.accessToken != null) {
+            serverUrl = creds.serverUrl
+            userId = creds.userId
+            accessToken = creds.accessToken
+            return true
+        }
+        return false
+    }
+
+    suspend fun logout() {
+        dataStoreManager.clearCredentials()
+        serverUrl = ""
+        userId = ""
+        accessToken = ""
+    }
+
+    private fun createRetrofit(serverUrl: String): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("$serverUrl/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
 
     suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
@@ -77,9 +108,9 @@ class JellyfinRepository @Inject constructor() {
         val app = "JellyfinRyan"
         val version = "1.0.0"
         val device = "AndroidTV"
-        val deviceId = "android-emulator" // You can improve this later
+        val deviceId = "android-emulator"
 
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
     }
-
 }
+

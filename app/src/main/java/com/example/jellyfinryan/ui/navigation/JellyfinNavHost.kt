@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.jellyfinryan.ui.screens.HomeScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
 
 sealed class Screen(val route: String) {
@@ -20,8 +21,11 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun JellyfinNavHost(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = Screen.Login.route) {
+fun JellyfinNavHost(
+    navController: NavHostController,
+    startDestination: String
+) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -33,15 +37,11 @@ fun JellyfinNavHost(navController: NavHostController) {
         }
 
         composable(Screen.Home.route) {
-            // For now, use a simple placeholder
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Home Screen Coming Soon")
-            }
+            HomeScreen(
+                onBrowseLibrary = { navController.navigate("browse/$it") },
+                onItemClick = { navController.navigate("detail/$it") }
+            )
         }
-
         composable(Screen.Browse.route) { backStackEntry ->
             val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
             Box(
