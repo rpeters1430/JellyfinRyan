@@ -10,6 +10,8 @@ import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.material3.*
 import com.example.jellyfinryan.ui.components.LibraryRow
 import com.example.jellyfinryan.viewmodel.HomeViewModel
+import androidx.tv.material3.Button
+import androidx.tv.material3.Text
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable

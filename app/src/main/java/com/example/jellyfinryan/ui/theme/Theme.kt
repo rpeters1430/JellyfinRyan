@@ -3,10 +3,11 @@ package com.example.jellyfinryan.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.darkTvColorScheme
-import androidx.tv.material3.lightTvColorScheme
+import androidx.tv.material3.*
+import androidx.tv.material3.darkColorScheme
+import androidx.tv.material3.lightColorScheme
 
-private val DarkExpressiveColorScheme = darkTvColorScheme(
+private val DarkExpressiveColorScheme = darkColorScheme(
     primary = BluePrimary,
     onPrimary = OnBluePrimary,
     primaryContainer = BluePrimaryContainer,
@@ -29,7 +30,7 @@ private val DarkExpressiveColorScheme = darkTvColorScheme(
     onError = OnError
 )
 
-private val LightExpressiveColorScheme = lightTvColorScheme(
+private val LightExpressiveColorScheme = lightColorScheme(
     primary = BluePrimary,
     onPrimary = OnBluePrimary,
     primaryContainer = BluePrimaryContainer,
