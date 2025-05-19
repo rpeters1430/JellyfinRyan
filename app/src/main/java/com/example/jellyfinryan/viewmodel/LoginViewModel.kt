@@ -21,12 +21,7 @@ class LoginViewModel @Inject constructor(
     fun login(serverUrl: String, username: String, password: String) {
         viewModelScope.launch {
             // Perform login logic
-            val result = repository.login(serverUrl, username, password)
-            _loginSuccess.emit(result.isSuccessful)
+            val result: Result<Boolean> = repository.login(serverUrl, username, password)
         }
-    }
-
-    suspend fun isLoggedIn(): Boolean {
-        return repository.isLoggedIn()
     }
 }
