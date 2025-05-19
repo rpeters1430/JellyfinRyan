@@ -1,5 +1,7 @@
 package com.example.jellyfinryan.api.model
 
+import okhttp3.Response
+
 data class JellyfinItem(
     val Id: String,
     val Name: String,

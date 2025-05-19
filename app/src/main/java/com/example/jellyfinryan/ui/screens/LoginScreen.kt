@@ -15,6 +15,7 @@ import androidx.tv.material3.*
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -30,6 +31,7 @@ fun LoginScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
+    // 🔁 Listen for login success
     LaunchedEffect(Unit) {
         viewModel.loginSuccess.collectLatest { success ->
             if (success) {
@@ -37,6 +39,7 @@ fun LoginScreen(
             }
         }
     }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
