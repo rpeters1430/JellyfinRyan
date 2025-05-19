@@ -4,7 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.jellyfinryan.ui.screens.HomeScreen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import com.example.jellyfinryan.ui.screens.LoginScreen
 
 sealed class Screen(val route: String) {
@@ -29,37 +33,42 @@ fun JellyfinNavHost(navController: NavHostController) {
         }
 
         composable(Screen.Home.route) {
-            HomeScreen(
-                onBrowseLibrary = { libraryId ->
-                    navController.navigate("browse/$libraryId")
-                },
-                onItemClick = { itemId ->
-                    navController.navigate("detail/$itemId")
-                }
-            )
+            // For now, use a simple placeholder
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Home Screen Coming Soon")
+            }
         }
 
         composable(Screen.Browse.route) { backStackEntry ->
             val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
-            // BrowseScreen will be added next
-            androidx.compose.material3.Surface {
-                androidx.compose.material3.Text("Browse Screen - Coming Soon for library: $libraryId")
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Browse Screen for library: $libraryId")
             }
         }
 
         composable(Screen.Detail.route) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
-            // DetailScreen will be added later
-            androidx.compose.material3.Surface {
-                androidx.compose.material3.Text("Detail Screen - Coming Soon for item: $itemId")
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Detail Screen for item: $itemId")
             }
         }
 
         composable(Screen.Player.route) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
-            // PlayerScreen will be added later
-            androidx.compose.material3.Surface {
-                androidx.compose.material3.Text("Player Screen - Coming Soon for item: $itemId")
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Player Screen for item: $itemId")
             }
         }
     }

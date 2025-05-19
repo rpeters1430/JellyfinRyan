@@ -8,7 +8,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,19 +34,13 @@ class HomeViewModel @Inject constructor(
     }
 
     fun loadRecentItems() {
-        viewModelScope.launch {
-            // Implementation would depend on specific Jellyfin API for recent items
-            // For now, using empty list
-            _recentItems.value = emptyList()
-        }
+        // For now, just use an empty list
+        _recentItems.value = emptyList()
     }
 
     fun loadContinueWatching() {
-        viewModelScope.launch {
-            // Implementation would depend on specific Jellyfin API for continue watching
-            // For now, using empty list
-            _continueWatching.value = emptyList()
-        }
+        // For now, just use an empty list
+        _continueWatching.value = emptyList()
     }
 
     fun getServerUrl(): String = repository.getServerUrl()

@@ -10,6 +10,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.foundation.lazy.list.TvLazyColumn
+import androidx.tv.foundation.lazy.list.items
 import androidx.tv.material3.*
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 
@@ -39,8 +40,7 @@ fun LoginScreen(
             Card(
                 modifier = Modifier
                     .width(480.dp)
-                    .padding(16.dp),
-                shape = CardDefaults.shape
+                    .padding(16.dp)
             ) {
                 TvLazyColumn(
                     modifier = Modifier.padding(24.dp),

@@ -1,7 +1,6 @@
 package com.example.jellyfinryan
 
 import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
 
-@HiltAndroidApp
+// Remove @HiltAndroidApp for now
 class JellyfinApp : Application()

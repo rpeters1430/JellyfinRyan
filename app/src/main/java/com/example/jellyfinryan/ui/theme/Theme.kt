@@ -3,30 +3,68 @@ package com.example.jellyfinryan.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.darkColorScheme
-import androidx.tv.material3.lightColorScheme
+import androidx.tv.material3.darkTvColorScheme
+import androidx.tv.material3.lightTvColorScheme
+
+private val DarkExpressiveColorScheme = darkTvColorScheme(
+    primary = BluePrimary,
+    onPrimary = OnBluePrimary,
+    primaryContainer = BluePrimaryContainer,
+    onPrimaryContainer = OnBluePrimaryContainer,
+    secondary = PurpleSecondary,
+    onSecondary = OnPurpleSecondary,
+    secondaryContainer = PurpleSecondaryContainer,
+    onSecondaryContainer = OnPurpleSecondaryContainer,
+    tertiary = GreenTertiary,
+    onTertiary = OnGreenTertiary,
+    tertiaryContainer = GreenTertiaryContainer,
+    onTertiaryContainer = OnGreenTertiaryContainer,
+    background = DarkBackground,
+    onBackground = OnDarkBackground,
+    surface = DarkSurface,
+    onSurface = OnDarkSurface,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = OnDarkSurfaceVariant,
+    error = Error,
+    onError = OnError
+)
+
+private val LightExpressiveColorScheme = lightTvColorScheme(
+    primary = BluePrimary,
+    onPrimary = OnBluePrimary,
+    primaryContainer = BluePrimaryContainer,
+    onPrimaryContainer = OnBluePrimaryContainer,
+    secondary = PurpleSecondary,
+    onSecondary = OnPurpleSecondary,
+    secondaryContainer = PurpleSecondaryContainer,
+    onSecondaryContainer = OnPurpleSecondaryContainer,
+    tertiary = GreenTertiary,
+    onTertiary = OnGreenTertiary,
+    tertiaryContainer = GreenTertiaryContainer,
+    onTertiaryContainer = OnGreenTertiaryContainer,
+    background = LightBackground,
+    onBackground = OnLightBackground,
+    surface = LightSurface,
+    onSurface = OnLightSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = OnLightSurfaceVariant,
+    error = Error,
+    onError = OnError
+)
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun JellyfinRyanTheme(
-    isInDarkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
+fun JellyfinTVTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
 ) {
-    val colorScheme = if (isInDarkTheme) {
-        darkColorScheme(
-            primary = Purple80,
-            secondary = PurpleGrey80,
-            tertiary = Pink80
-        )
+    val colorScheme = if (darkTheme) {
+        DarkExpressiveColorScheme
     } else {
-        lightColorScheme(
-            primary = Purple40,
-            secondary = PurpleGrey40,
-            tertiary = Pink40
-        )
+        LightExpressiveColorScheme
     }
-    MaterialTheme(
+
+    androidx.tv.material3.MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
         content = content

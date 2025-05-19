@@ -1,0 +1,19 @@
+package com.example.jellyfinryan.di
+
+import com.example.jellyfinryan.api.JellyfinRepository
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideJellyfinRepository(): JellyfinRepository {
+        return JellyfinRepository()
+    }
+}
