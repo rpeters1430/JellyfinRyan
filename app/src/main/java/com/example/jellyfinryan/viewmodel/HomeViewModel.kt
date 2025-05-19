@@ -15,10 +15,10 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _libraries = MutableStateFlow<List<JellyfinItem>>(emptyList())
-    val libraries: StateFlow<List<JellyfinItem>> = _libraries
+    val libraries: StateFlow<List<JellyfinItem>> = _libraries.asStateFlow()
 
-    private val _recentItemsMap = MutableStateFlow<Map<String, List<JellyfinItem>>>(emptyMap())
-    val recentItemsMap: StateFlow<Map<String, List<JellyfinItem>>> = _recentItemsMap
+    private val _libraryItems = MutableStateFlow<Map<String, List<JellyfinItem>>>(emptyMap())
+    val libraryItems: StateFlow<Map<String, List<JellyfinItem>>> = _libraryItems.asStateFlow()
 
     init {
         fetchLibraries()
@@ -28,18 +28,24 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getUserViews().collect { views ->
                 _libraries.value = views
-                views.forEach { view ->
-                    fetchRecentItems(view.Id)
+
+                views.forEach { library ->
+                    fetchItemsForLibrary(library.Id)
                 }
             }
         }
     }
 
-    private fun fetchRecentItems(libraryId: String) {
+    private fun fetchItemsForLibrary(libraryId: String) {
         viewModelScope.launch {
             repository.getLibraryItems(libraryId).collect { items ->
-                _recentItemsMap.update { it + (libraryId to items) }
+                _libraryItems.update { current ->
+                    current + (libraryId to items)
+                }
             }
         }
     }
+
+    fun getServerUrl(): String = repository.getServerUrl()
 }
+
