@@ -3,10 +3,12 @@ package com.example.jellyfinryan.api
 import com.example.jellyfinryan.api.model.JellyfinItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import retrofit2.Response
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlin.Result
 import javax.inject.Inject
 import javax.inject.Singleton
-import retrofit2.Response
 
 @Singleton
 open class JellyfinRepository @Inject constructor(
@@ -40,6 +42,7 @@ open class JellyfinRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
     open suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
         emit(emptyList())
     }
