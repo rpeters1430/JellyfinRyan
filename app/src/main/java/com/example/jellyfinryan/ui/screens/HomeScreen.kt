@@ -1,11 +1,18 @@
 package com.example.jellyfinryan.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
@@ -22,51 +29,140 @@ fun HomeScreen(
 ) {
     val libraries by viewModel.libraries.collectAsState()
     val libraryItems by viewModel.libraryItems.collectAsState(initial = emptyMap())
+    var focusedBackground by remember { mutableStateOf<String?>(null) }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        item {
-            Text(
-                text = "My Media",
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background image layer
+        focusedBackground?.let { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                alpha = 0.2f
             )
         }
 
-        items(libraries) { library ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            item {
                 Text(
-                    text = library.Name,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    text = "Your Libraries",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
+            }
 
-                val items = libraryItems[library.Id] ?: emptyList()
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(libraries) { library ->
+                        var isFocused by remember { mutableStateOf(false) }
+                        val imageUrl = library.getImageUrl(viewModel.getServerUrl())
 
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(items) { item ->
-                        Card(onClick = { onItemClick(item.Id) }) {
-                            Column(modifier = Modifier.width(160.dp)) {
-                                item.getImageUrl(viewModel.getServerUrl())?.let { url ->
+                        Card(
+                            onClick = { onBrowseLibrary(library.Id) },
+                            modifier = Modifier
+                                .width(320.dp)
+                                .height(180.dp)
+                                .onFocusChanged {
+                                    isFocused = it.isFocused
+                                    if (it.isFocused) {
+                                        focusedBackground = imageUrl
+                                    }
+                                }
+                                .border(
+                                    width = if (isFocused) 3.dp else 0.dp,
+                                    color = Color.White
+                                )
+                                .focusable()
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (imageUrl != null) {
                                     AsyncImage(
-                                        model = url,
-                                        contentDescription = item.Name,
+                                        model = imageUrl,
+                                        contentDescription = library.Name,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Box(
                                         modifier = Modifier
-                                            .height(240.dp)
-                                            .fillMaxWidth()
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
                                     )
                                 }
-                                Text(
-                                    text = item.Name,
-                                    modifier = Modifier.padding(8.dp)
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    Color.Black.copy(alpha = 0.6f),
+                                                    Color.Transparent
+                                                )
+                                            )
+                                        )
                                 )
+
+                                Text(
+                                    text = library.Name,
+                                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .padding(12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+            items(libraries) { library ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
+                ) {
+                    Text(
+                        text = library.Name,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    val items = libraryItems[library.Id] ?: emptyList()
+
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(items) { item ->
+                            Card(
+                                onClick = { onItemClick(item.Id) },
+                                modifier = Modifier
+                                    .width(160.dp)
+                                    .onFocusChanged {
+                                        if (it.isFocused) {
+                                            focusedBackground = item.getImageUrl(viewModel.getServerUrl())
+                                        }
+                                    }
+                                    .focusable()
+                            ) {
+                                Column {
+                                    item.getImageUrl(viewModel.getServerUrl())?.let { url ->
+                                        AsyncImage(
+                                            model = url,
+                                            contentDescription = item.Name,
+                                            modifier = Modifier
+                                                .height(240.dp)
+                                                .fillMaxWidth()
+                                        )
+                                    }
+                                    Text(
+                                        text = item.Name,
+                                        modifier = Modifier.padding(8.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -75,3 +171,5 @@ fun HomeScreen(
         }
     }
 }
+
+
