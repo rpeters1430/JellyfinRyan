@@ -15,17 +15,18 @@ class BrowseViewModel @Inject constructor(
     private val repository: JellyfinRepository
 ) : ViewModel() {
 
-    private val _allItems = MutableStateFlow<List<JellyfinItem>>(emptyList())
-    val allItems: StateFlow<List<JellyfinItem>> = _allItems
+    private val _items = MutableStateFlow<List<JellyfinItem>>(emptyList())
+    val items: StateFlow<List<JellyfinItem>> = _items
 
-    fun loadAllItems(libraryId: String) {
+    fun loadItems(libraryId: String) {
         viewModelScope.launch {
-            repository.getLibraryItems(libraryId).collect {
-                _allItems.value = it
+            repository.getLibraryItemsFull(libraryId).collect {
+                _items.value = it
             }
         }
     }
 
     fun getServerUrl(): String = repository.getServerUrl()
 }
+
 

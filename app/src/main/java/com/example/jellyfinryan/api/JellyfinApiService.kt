@@ -46,7 +46,7 @@ interface JellyfinApiService {
         @Query("ParentId") parentId: String,
         @Query("SortBy") sortBy: String,
         @Query("SortOrder") sortOrder: String,
-        @Query("Limit") limit: Int,
+        @Query("Limit") limit: Int?,
         @Header("X-Emby-Token") authToken: String
     ): LibraryItemsResponse
 }

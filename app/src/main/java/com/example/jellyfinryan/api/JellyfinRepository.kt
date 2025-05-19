@@ -9,7 +9,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.example.jellyfinryan.api.AuthenticateUserByNameRequest
 
 
 @Singleton
@@ -112,8 +111,20 @@ class JellyfinRepository @Inject constructor(
         )
         emit(items.Items)
     }
+    suspend fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
 
-
+        val response = api.getItems(
+            userId = userId,
+            parentId = libraryId,
+            sortBy = "SortName",
+            sortOrder = "Ascending",
+            limit = null, // Remove limit to fetch full list
+            authToken = accessToken
+        )
+        emit(response.Items)
+    }
     suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
         emit(null)
     }
