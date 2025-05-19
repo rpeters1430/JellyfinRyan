@@ -1,14 +1,14 @@
 package com.example.jellyfinryan.ui.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import com.example.jellyfinryan.ui.screens.BrowseScreen
 import com.example.jellyfinryan.ui.screens.HomeScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
@@ -47,8 +47,11 @@ fun JellyfinNavHost(
             val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
             BrowseScreen(
                 libraryId = libraryId,
-                onItemClick = { backStackEntrySaved ->
-                    navController.navigate("detail/$backStackEntrySaved")
+                onItemClick = { itemId ->
+                    navController.navigate("detail/$itemId")
+                },
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
