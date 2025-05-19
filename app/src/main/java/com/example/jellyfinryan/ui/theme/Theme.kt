@@ -65,7 +65,7 @@ fun JellyfinTVTheme(
         LightExpressiveColorScheme
     }
 
-    androidx.tv.material3.MaterialTheme(
+    MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
         content = content

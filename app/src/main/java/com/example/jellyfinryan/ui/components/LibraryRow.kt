@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import com.example.jellyfinryan.api.model.JellyfinItem
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -25,7 +26,7 @@ fun LibraryRow(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        TvLazyRow(
+        LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(items) { item ->

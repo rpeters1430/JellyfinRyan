@@ -1,12 +1,13 @@
 package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.material3.*
 import com.example.jellyfinryan.ui.components.LibraryRow
 import com.example.jellyfinryan.viewmodel.HomeViewModel
@@ -31,7 +32,7 @@ fun HomeScreen(
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        TvLazyColumn(
+        LazyColumn(
             modifier = Modifier.padding(top = 48.dp, start = 48.dp, end = 48.dp, bottom = 24.dp)
         ) {
             item {
