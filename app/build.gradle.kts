@@ -60,14 +60,9 @@ dependencies {
 
     // Dependency Injection - using an older version for better compatibility
     implementation(libs.hilt.android)
-    implementation(libs.androidx.contentpager)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.coil.compose)
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
 
     // Testing
     testImplementation(libs.junit)
