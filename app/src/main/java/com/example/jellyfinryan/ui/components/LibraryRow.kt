@@ -11,13 +11,13 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Card
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
-import com.example.jellyfinryan.models.Episode
+import com.example.jellyfinryan.api.model.JellyfinItem
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun LibraryRow(
     title: String,
-    items: List<Episode>,
+    items: List<JellyfinItem>,
     onItemClick: (String) -> Unit,
     serverUrl: String,
     modifier: Modifier = Modifier
@@ -36,15 +36,17 @@ fun LibraryRow(
         ) {
             items(items) { item ->
                 Card(
-                    onClick = { onItemClick(item.id) },
-                    modifier = Modifier.height(200.dp).width(150.dp)
+                    onClick = { onItemClick(item.Id) },
+                    modifier = Modifier
+                        .height(200.dp)
+                        .width(150.dp)
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = item.name,
+                            text = item.Name,
                             style = MaterialTheme.typography.titleLarge
                         )
                     }
