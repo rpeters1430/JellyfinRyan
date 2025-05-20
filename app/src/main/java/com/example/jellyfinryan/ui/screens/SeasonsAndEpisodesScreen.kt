@@ -9,7 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.*
+import androidx.tv.material3.Card
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.example.jellyfinryan.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalTvMaterial3Api::class)
