@@ -14,13 +14,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,58 +32,38 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.Icon
-import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.BrowseViewModel
 
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun BrowseScreen(
     libraryId: String,
     onItemClick: (String) -> Unit,
-    onBackClick: () -> Unit,
     viewModel: BrowseViewModel = hiltViewModel()
 ) {
-    val allItems by viewModel.items.collectAsState()
+    val allItems by viewModel.items.collectAsState() // <- FIXED HERE
     var scrollHorizontally by remember { mutableStateOf(false) }
 
+    // Load the full library items for the given library
     LaunchedEffect(libraryId) {
-        viewModel.loadItems(libraryId)
+        viewModel.loadItems(libraryId) // <- FIXED HERE
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        CenterAlignedTopAppBar(
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant, // Or .surface or .primary if you prefer
-                navigationIconContentColor = Color.White,
-                titleContentColor = Color.White,
-                actionIconContentColor = Color.White
-            ),
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            title = {
-                Text(
-                    text = "Browsing Library",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            },
-            actions = {
-                TextButton(onClick = { scrollHorizontally = !scrollHorizontally }) {
-                    Text(
-                        text = if (scrollHorizontally) "Vertical View" else "Horizontal View"
-                    )
-                }
-            }
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(
+            text = "Browsing Library",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp))
+
+        // Toggle between vertical and horizontal layout
+        TextButton(onClick = { scrollHorizontally = !scrollHorizontally }) {
+            Text("Switch to ${if (scrollHorizontally) "Vertical" else "Horizontal"} View")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (scrollHorizontally) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -98,7 +73,7 @@ fun BrowseScreen(
                             .width(160.dp)
                             .onFocusChanged {
                                 if (it.isFocused) {
-                                    // Optional: handle focus changes
+                                    // You can update background here if desired
                                 }
                             }
                             .focusable(),
@@ -137,7 +112,7 @@ fun BrowseScreen(
                         modifier = Modifier
                             .onFocusChanged {
                                 if (it.isFocused) {
-                                    // Optional: handle focus changes
+                                    // You can update background here if desired
                                 }
                             }
                             .focusable(),
