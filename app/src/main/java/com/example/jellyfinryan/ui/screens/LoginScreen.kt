@@ -2,6 +2,7 @@ package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +15,7 @@ import androidx.tv.material3.*
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.tv.material3.Text
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -28,7 +30,6 @@ fun LoginScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    // 🔁 Listen for login success
     LaunchedEffect(Unit) {
         viewModel.loginSuccess.collectLatest { success ->
             if (success) {
@@ -36,7 +37,6 @@ fun LoginScreen(
             }
         }
     }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
