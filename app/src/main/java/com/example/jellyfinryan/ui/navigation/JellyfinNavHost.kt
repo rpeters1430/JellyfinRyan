@@ -1,5 +1,6 @@
 package com.example.jellyfinryan.ui.navigation
 
+import HomeScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -11,7 +12,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.jellyfinryan.ui.screens.BrowseScreen
 import com.example.jellyfinryan.ui.screens.EpisodeListScreen
-import com.example.jellyfinryan.ui.screens.HomeScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
 import com.example.jellyfinryan.ui.screens.ShowDetailScreen
 
