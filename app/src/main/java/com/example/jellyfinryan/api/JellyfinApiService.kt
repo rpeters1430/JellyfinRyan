@@ -22,24 +22,38 @@ data class AuthenticateResponse(
     val User: User
 )
 
+data class ApiResponse<T>(
+    val Items: List<T>
+)
+
 data class User(
     val Id: String
 )
 data class UserViewsResponse(val Items: List<JellyfinItem>)
 data class LibraryItemsResponse(val Items: List<JellyfinItem>)
 interface JellyfinApiService {
+    // Fetch all seasons for a show
+    @GET("Shows/{showId}/Seasons")
+    suspend fun getSeasons(
+        @Path("showId") showId: String,
+        @Header("Authorization") authToken: String
+    ): ApiResponse<List<JellyfinItem>>
+    // Fetch all episodes for a season
+    @GET("Seasons/{seasonId}/Episodes")
+    suspend fun getEpisodes(
+        @Path("seasonId") seasonId: String,
+        @Header("Authorization") authToken: String
+    ): ApiResponse<List<JellyfinItem>>
     @POST("Users/AuthenticateByName")
     suspend fun authenticateUserByName(
         @Header("X-Emby-Authorization") authHeader: String,
         @Body request: AuthenticateUserByNameRequest
     ): AuthenticateResponse
-
     @GET("Users/{userId}/Views") // <-- This was missing
     suspend fun getUserViews(
         @Path("userId") userId: String,
         @Header("X-Emby-Token") authToken: String
     ): UserViewsResponse
-
     @GET("Users/{userId}/Items")
     suspend fun getItems(
         @Path("userId") userId: String,

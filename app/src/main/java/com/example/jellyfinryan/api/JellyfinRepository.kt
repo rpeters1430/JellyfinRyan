@@ -111,6 +111,7 @@ class JellyfinRepository @Inject constructor(
         )
         emit(items.Items)
     }
+
     suspend fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
@@ -125,6 +126,7 @@ class JellyfinRepository @Inject constructor(
         )
         emit(response.Items)
     }
+
     suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
         emit(null)
     }
@@ -140,6 +142,28 @@ class JellyfinRepository @Inject constructor(
         val deviceId = "android-emulator"
 
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
+    }
+    suspend fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val response = api.getSeasons(
+            showId = showId,
+            authToken = accessToken
+        )
+        // Flatten the list if necessary
+        emit(response.Items.flatten())
+    }
+    suspend fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val response = api.getEpisodes(
+            seasonId = seasonId,
+            authToken = accessToken
+        )
+        // Flatten the list if necessary
+        emit(response.Items.flatten())
     }
 }
 
