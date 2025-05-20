@@ -1,60 +1,78 @@
 package com.example.jellyfinryan.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
 import com.example.jellyfinryan.ui.screens.BrowseScreen
 import com.example.jellyfinryan.ui.screens.HomeScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
-import com.example.jellyfinryan.ui.screens.ShowDetailsScreen // We will create this file
-import com.example.jellyfinryan.viewmodel.LoginViewModel
+
+sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Home : Screen("home")
+    object Browse : Screen("browse/{libraryId}")
+    object Detail : Screen("detail/{itemId}")
+    object Player : Screen("player/{itemId}")
+}
 
 @Composable
 fun JellyfinNavHost(
     navController: NavHostController,
-    loginViewModel: LoginViewModel = hiltViewModel()
+    startDestination: String
 ) {
-    val loginState by loginViewModel.loginState.collectAsState()
-    // Determine start destination based on login state
-    val startDestination = if (loginState.isLoggedIn) Screen.Home.route else Screen.Login.route
-
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Login.route) {
-            LoginScreen(navController = navController, viewModel = loginViewModel)
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
         }
+
         composable(Screen.Home.route) {
-            HomeScreen(navController = navController, homeViewModel = hiltViewModel())
+            HomeScreen(
+                onBrowseLibrary = { navController.navigate("browse/$it") },
+                onItemClick = { navController.navigate("detail/$it") }
+            )
         }
-        composable(
-            route = Screen.Browse.route,
-            arguments = listOf(navArgument("libraryId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val libraryId = backStackEntry.arguments?.getString("libraryId")
-            requireNotNull(libraryId) { "libraryId parameter missing from route. Please ensure it's passed during navigation." }
+        composable(Screen.Browse.route) { backStackEntry ->
+            val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
             BrowseScreen(
-                navController = navController,
                 libraryId = libraryId,
-                browseViewModel = hiltViewModel()
+                onItemClick = { itemId ->
+                    navController.navigate("detail/$itemId")
+                },
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
-        // New Destination for Show Details
-        composable(
-            route = Screen.ShowDetails.route,
-            arguments = listOf(navArgument(Screen.ShowDetails.ARG_ITEM_ID) { type = NavType.StringType })
-        ) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString(Screen.ShowDetails.ARG_ITEM_ID)
-            requireNotNull(itemId) { "${Screen.ShowDetails.ARG_ITEM_ID} parameter missing from route." }
-            ShowDetailsScreen( // This Composable will be created in Step 7
-                itemId = itemId,
-                navController = navController,
-                showDetailsViewModel = hiltViewModel() // Hilt will provide this
-            )
+        composable(Screen.Detail.route) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Detail Screen for item: $itemId")
+            }
+        }
+
+        composable(Screen.Player.route) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Player Screen for item: $itemId")
+            }
         }
     }
 }

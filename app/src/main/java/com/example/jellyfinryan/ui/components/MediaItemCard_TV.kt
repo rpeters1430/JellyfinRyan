@@ -1,74 +1,81 @@
 package com.example.jellyfinryan.ui.components
 
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize // Changed from fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.Card // Using TV Card for better focus behavior
-import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.*
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.jellyfinryan.api.JellyfinRepository // For getImageUrl
 import com.example.jellyfinryan.api.model.JellyfinItem
-import com.example.jellyfinryan.viewmodel.BrowseViewModel // To access repository
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun MediaItemCard_TV(
+fun MediaCard(
     item: JellyfinItem,
-    // serverAddress: String?, // No longer needed here if ViewModel provides full URL
-    repository: JellyfinRepository, // Pass repository or get full URL from BrowseViewModel's item
-    onItemClick: (itemId: String) -> Unit
+    serverUrl: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var imageUrl by remember { mutableStateOf<String?>(null) }
+    var isFocused by remember { mutableStateOf(false) }
 
-    LaunchedEffect(item.Id, item.ImageTags) {
-        // Construct the image URL. Prefer Primary, fallback to Thumb.
-        val primaryTag = item.ImageTags?.get("Primary")
-        val thumbTag = item.ImageTags?.get("Thumb")
-
-        imageUrl = if (primaryTag != null) {
-            repository.getImageUrl(item.Id, primaryTag, "Primary", maxWidth = 200, maxHeight = 300)
-        } else if (thumbTag != null) {
-            repository.getImageUrl(item.Id, thumbTag, "Thumb", maxWidth = 200, maxHeight = 300)
-        } else {
-            // Consider a placeholder if no image tag is available
-            null
-        }
-    }
     Card(
-        onClick = {
-            // Only allow click if it's a type that has details (e.g., Series or Movie)
-            if (item.Type == "Series" || item.Type == "Movie") {
-                onItemClick(item.Id)
-            }
-            // You can add handling for other types if needed, e.g., "Episode" might go to player.
-        },
-        modifier = Modifier
-            .padding(8.dp) // Keep padding
-            .aspectRatio(2f / 3f) // Maintain aspect ratio for posters
-        // .fillMaxWidth() // Let the grid cell define the width
+        onClick = onClick,
+        modifier = modifier
+            .width(160.dp)
+            .height(260.dp)
+            .scale(if (isFocused) 1.1f else 1f)
+            .focusable()
+            .onFocusChanged { isFocused = it.isFocused },
+        shape = RoundedCornerShape(12.dp),
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl) // Use the state variable
-                .crossfade(true)
-                // .placeholder(R.drawable.your_placeholder) // Optional: Add a placeholder
-                // .error(R.drawable.your_error_image) // Optional: Add an error image
-                .build(),
-            contentDescription = item.Name,
-            contentScale = ContentScale.Crop, // Crop to fill the card bounds
-            modifier = Modifier.fillMaxSize() // Fill the Card
-        )
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f / 3f)
+            ) {
+                item.getImageUrl(serverUrl)?.let { imageUrl ->
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.Name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } ?: Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item.Name.take(1),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = item.Name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
