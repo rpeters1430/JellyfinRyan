@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.example.jellyfinryan.ui.common.UiState // Import UiState
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,14 +23,8 @@ class PlayerViewModel @Inject constructor(
     application: Application // Inject Application for AndroidViewModel
 ) : AndroidViewModel(application) {
 
-    private val _mediaUrl = MutableStateFlow<String?>(null)
-    val mediaUrl: StateFlow<String?> = _mediaUrl.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    private val _uiState = MutableStateFlow<UiState<String?>>(UiState.Loading)
+    val uiState = _uiState.asStateFlow() // Expose UiState as StateFlow
 
     private val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
 
@@ -45,8 +39,7 @@ class PlayerViewModel @Inject constructor(
 
     private fun fetchMediaUrl(itemId: String) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _uiState.value = UiState.Loading // Emit Loading state
             try {
                 val item = repository.getItemDetails(itemId) // Assuming this function exists
                 val url = when (item?.type) {
@@ -54,16 +47,15 @@ class PlayerViewModel @Inject constructor(
                     "Movie" -> repository.getMovieStreamUrl(itemId) // Assuming you'll add this function
                     else -> null // Handle other types or null item
                 }
-                _mediaUrl.value = url
+                _uiState.value = UiState.Success(url) // Emit Success state with the URL
                 if (url != null) {
                     val mediaItem = MediaItem.fromUri(url)
                     _player?.setMediaItem(mediaItem)
                     _player?.prepare()
                     _player?.play()
+                }
             } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+                _uiState.value = UiState.Error(e.message ?: "An unknown error occurred") // Emit Error state
             }
         }
     }

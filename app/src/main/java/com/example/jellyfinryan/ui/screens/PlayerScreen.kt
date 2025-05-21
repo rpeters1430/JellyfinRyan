@@ -38,6 +38,10 @@ import androidx.compose.material.icons.filled.VolumeUp // Import volume icons
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeMute
 import androidx.compose.material.icons.filled.Fullscreen // Import fullscreen icons
+import androidx.compose.material.icons.filled.Home // Import Home icon
+import androidx.compose.material.icons.filled.Settings // Import Settings icon
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Import ArrowBack icon
+import androidx.compose.material3.CircularProgressIndicator // Import CircularProgressIndicator
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.MoreVert // Import morevert icon
 import androidx.compose.ui.viewinterop.AndroidView
@@ -48,15 +52,15 @@ import androidx.media3.common.Player
 import java.util.concurrent.TimeUnit
 import android.view.WindowManager // Import WindowManager
 import kotlinx.coroutines.delay // Import delay
+import com.example.jellyfinryan.ui.common.UiState // Import UiState
 
 @Composable
 fun PlayerScreen(
     episodeId: String,
+    onBackClick: () -> Unit, // Add onBackClick parameter
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
-    val mediaUrl by viewModel.mediaUrl.collectAsState()
-    val errorMessage by viewModel.error.collectAsState()
-    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
     val player = viewModel.player
 
     // State for playback position and duration
@@ -68,7 +72,6 @@ fun PlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) } // State for control visibility
     var volumeSliderVisible by remember { mutableStateOf(false) } // State for volume slider visibility
     var isFullScreen by remember { mutableStateOf(false) } // State for fullscreen mode
-
 
     // Listen to player state changes
     player?.let {
@@ -133,170 +136,276 @@ fun PlayerScreen(
         contentAlignment = Alignment.Center
     ) {
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize(),
             factory = {
-                FrameLayout(context).apply {
-                    layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-                    val playerView = PlayerView(context).apply {
-                        player = this@PlayerScreen.player
-                        useController = false // Disable default controls
-                        layoutParams = FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-                    }
-                    addView(playerView)
+                PlayerView(it).also { playerView ->
+                    playerView.useController = false // Disable default controls
                 }
-            },
-            update = { frameLayout ->
-                // Update logic if needed based on Compose state changes
             }
         )
 
-        if (isBuffering) {
-            LinearProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        }
+        when (uiState) {
+            is UiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is UiState.Error -> {
+                Text(
+                    text = (uiState as UiState.Error).message,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            is UiState.Success -> {
+                // Player View is handled by the AndroidView above
+                val mediaUrl = (uiState as UiState.Success).data
 
-        if (errorMessage != null) {
-            Text(text = errorMessage.orEmpty(), modifier = Modifier.align(Alignment.Center))
-        }
+                LaunchedEffect(mediaUrl) {
+                    if (mediaUrl != null) {
+                        val mediaItem = androidx.media3.common.MediaItem.fromUri(mediaUrl)
+                        player?.setMediaItem(mediaItem)
+                        player?.prepare()
+                        player?.play()
+                    }
+                }
 
-        // Play/Pause button
-        AnimatedVisibility(
-            visible = controlsVisible,
-            modifier = Modifier.align(Alignment.Center)
-        ) {
-            FloatingActionButton(
-                onClick = { player?.playWhenReady = !(player?.playWhenReady ?: true) }
-            ) {
-                Icon(imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = "Play/Pause")
+                if (isBuffering) {
+                    LinearProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                // Top control row (Back, Home, Settings)
+                AnimatedVisibility(
+                    visible = controlsVisible,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.6f)) // Add a semi-transparent black background
+                        .padding(8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Back button
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+
+                        // Spacer to push other icons to the end
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Home button (Placeholder)
+                        IconButton(
+                            onClick = {
+                                // TODO: Implement Home navigation
+                            },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(imageVector = Icons.Filled.Home, contentDescription = "Home")
+                        }
+
+                        // Settings button (Placeholder)
+                        IconButton(
+                            onClick = {
+                                // TODO: Implement Settings navigation
+                            },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Settings")
+                        }
+                    }
+                }
+
+                // Play/Pause button
+                AnimatedVisibility(
+                    visible = controlsVisible,
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    FloatingActionButton(
+                        onClick = { player?.playWhenReady = !(player?.playWhenReady ?: true) }
+                    ) {
+                        Icon(imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = "Play/Pause")
+                    }
+                }
+
+                // Bottom Control Row
+                AnimatedVisibility(
+                    visible = controlsVisible,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.6f)) // Add a semi-transparent black background
+                        .padding(vertical = 8.dp, horizontal = 16.dp) // Add vertical and horizontal padding
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Rewind button
+                        IconButton(
+                            onClick = {
+                                player?.seekBack() // Use seekBack for rewind
+                            },
+                            modifier = Modifier.size(48.dp) // Make the button larger
+                        ) {
+                            Icon(imageVector = Icons.Filled.FastRewind, contentDescription = "Rewind")
+                        }
+
+                        // Current position text
+                        Text(text = formatTime(currentPosition), color = Color.White) // Set text color to white
+
+                        // Seek bar
+                        Slider(
+                            value = currentPosition.toFloat(),
+                            valueRange = 0f..duration.toFloat(),
+                            onValueChange = { newValue ->
+                                currentPosition = newValue.toLong() // Update position as slider moves
+                            },
+                            onValueChangeFinished = { newValue ->
+                                player?.seekTo(newValue.toLong()) // Seek to the final position
+                            },
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp), // Slider takes available space
+                            colors = SliderDefaults.colors( // Optional: Customize slider colors
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                            )
+                        )
+
+                        // Duration text
+                        Text(text = formatTime(duration), color = Color.White) // Set text color to white
+
+                        // Fast Forward button
+                        IconButton(
+                            onClick = {
+                                player?.seekForward() // Use seekForward for fast forward
+                            },
+                            modifier = Modifier.size(48.dp) // Make the button larger
+                        ) {
+                            Icon(imageVector = Icons.Filled.FastForward, contentDescription = "Fast Forward")
+                        }
+
+                        // Volume button
+                        IconButton(
+                            onClick = {
+                                volumeSliderVisible = !volumeSliderVisible // Toggle volume slider visibility
+                            },
+                            modifier = Modifier.size(48.dp) // Make the button larger
+                        ) {
+                            val volumeIcon = when {
+                                player?.volume == 0f -> Icons.Filled.VolumeMute
+                                player?.volume ?: 0f < 0.5f -> Icons.Filled.VolumeDown
+                                else -> Icons.Filled.VolumeUp
+                            }
+                            Icon(imageVector = volumeIcon, contentDescription = "Volume")
+                        }
+
+                        // Full-screen toggle button
+                        IconButton(
+                            onClick = {
+                                isFullScreen = !isFullScreen
+                                val activity = LocalView.current.context as Activity
+                                if (isFullScreen) {
+                                    activity.window.setFlags(
+                                        WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                                        WindowManager.LayoutParams.FLAG_FULLSCREEN
+                                    )
+                                } else {
+                                    activity.window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                                }
+                            },
+                            modifier = Modifier.size(48.dp) // Make the button larger
+                        ) {
+                            val fullscreenIcon = if (isFullScreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen
+                            Icon(imageVector = fullscreenIcon, contentDescription = if (isFullScreen) "Exit Fullscreen" else "Enter Fullscreen")
+                        }
+
+                        // Options button (placeholder)
+                        IconButton(
+                            onClick = {
+                                // TODO: Implement options menu
+                            },
+                            modifier = Modifier.size(48.dp) // Make the button larger
+                        ) {
+                            Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Options")
+                        }
+                    }
+                }
+
+                // Volume Slider
+                AnimatedVisibility(
+                    visible = volumeSliderVisible,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 80.dp, end = 16.dp) // Position above the control row
+                        .width(48.dp) // Fixed width for the vertical slider
+                ) {
+                    Slider(
+                        value = player?.volume ?: 0f,
+                        valueRange = 0f..1f,
+                        onValueChange = { newValue ->
+                            player?.volume = newValue
+                        },
+                        colors = SliderDefaults.colors( // Customize slider colors
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                        )
+                    )
+                }
             }
         }
 
-
-        // Control Row
-        AnimatedVisibility(
+        // Top control row (Back, Home, Settings) - Moved inside Success state
+        /*AnimatedVisibility(
             visible = controlsVisible,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .background(Color.Black.copy(alpha = 0.6f)) // Add a semi-transparent black background
-                .padding(vertical = 8.dp, horizontal = 16.dp) // Add vertical and horizontal padding
+                .padding(8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Rewind button
+                // Back button
                 IconButton(
-                    onClick = {
-                        player?.seekBack() // Use seekBack for rewind
-                    },
-                    modifier = Modifier.size(48.dp) // Make the button larger
+                    onClick = onBackClick,
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(imageVector = Icons.Filled.FastRewind, contentDescription = "Rewind")
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
 
-                // Current position text
-                Text(text = formatTime(currentPosition), color = Color.White) // Set text color to white
+                // Spacer to push other icons to the end
+                Spacer(modifier = Modifier.weight(1f))
 
-                // Seek bar
-                Slider(
-                    value = currentPosition.toFloat(),
-                    valueRange = 0f..duration.toFloat(),
-                    onValueChange = { newValue ->
-                        currentPosition = newValue.toLong() // Update position as slider moves
-                    },
-                    onValueChangeFinished = { newValue ->
-                        player?.seekTo(newValue.toLong()) // Seek to the final position
-                    },
-                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp), // Slider takes available space
-                    colors = SliderDefaults.colors( // Optional: Customize slider colors
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                    )
-                )
-
-                // Duration text
-                Text(text = formatTime(duration), color = Color.White) // Set text color to white
-
-                // Fast Forward button
+                // Home button (Placeholder)
                 IconButton(
                     onClick = {
-                        player?.seekForward() // Use seekForward for fast forward
+                        // TODO: Implement Home navigation
                     },
-                    modifier = Modifier.size(48.dp) // Make the button larger
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(imageVector = Icons.Filled.FastForward, contentDescription = "Fast Forward")
+                    Icon(imageVector = Icons.Filled.Home, contentDescription = "Home")
                 }
 
-                // Volume button
+                // Settings button (Placeholder)
                 IconButton(
                     onClick = {
-                        volumeSliderVisible = !volumeSliderVisible // Toggle volume slider visibility
+                        // TODO: Implement Settings navigation
                     },
-                    modifier = Modifier.size(48.dp) // Make the button larger
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    val volumeIcon = when {
-                        player?.volume == 0f -> Icons.Filled.VolumeMute
-                        player?.volume ?: 0f < 0.5f -> Icons.Filled.VolumeDown
-                        else -> Icons.Filled.VolumeUp
-                    }
-                    Icon(imageVector = volumeIcon, contentDescription = "Volume")
-                }
-
-                // Full-screen toggle button
-                IconButton(
-                    onClick = {
-                        isFullScreen = !isFullScreen
-                        val activity = LocalView.current.context as Activity
-                        if (isFullScreen) {
-                            activity.window.setFlags(
-                                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                                WindowManager.LayoutParams.FLAG_FULLSCREEN
-                            )
-                        } else {
-                            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                        }
-                    },
-                    modifier = Modifier.size(48.dp) // Make the button larger
-                ) {
-                    val fullscreenIcon = if (isFullScreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen
-                    Icon(imageVector = fullscreenIcon, contentDescription = if (isFullScreen) "Exit Fullscreen" else "Enter Fullscreen")
-                }
-
-                // Options button (placeholder)
-                IconButton(
-                    onClick = {
-                        // TODO: Implement options menu
-                    },
-                    modifier = Modifier.size(48.dp) // Make the button larger
-                ) {
-                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Options")
+                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Settings")
                 }
             }
-        }
-
-        // Volume Slider
-        AnimatedVisibility(
-            visible = volumeSliderVisible,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 80.dp, end = 16.dp) // Position above the control row
-                .width(48.dp) // Fixed width for the vertical slider
-        ) {
-             Slider(
-                value = player?.volume ?: 0f,
-                valueRange = 0f..1f,
-                onValueChange = { newValue ->
-                    player?.volume = newValue
-                },
-                colors = SliderDefaults.colors( // Customize slider colors
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                )
-            )
-        }
+        )*/
     }
+
+
 }
 
 // Helper function to format time

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -16,7 +17,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +44,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
+import com.example.jellyfinryan.ui.common.UiState
 import com.example.jellyfinryan.ui.components.MediaItemCard
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.BrowseViewModel
@@ -52,7 +57,7 @@ fun BrowseScreen(
     onBackClick: () -> Unit,
     viewModel: BrowseViewModel = hiltViewModel()
 ) {
-    val allItems by viewModel.items.collectAsState()
+ val uiState by viewModel.uiState.collectAsState()
     var scrollHorizontally by remember { mutableStateOf(false) }
 
     LaunchedEffect(libraryId) {
@@ -83,9 +88,21 @@ fun BrowseScreen(
             },
             actions = {
                 TextButton(onClick = { scrollHorizontally = !scrollHorizontally }) {
-                    Text(
-                        text = if (scrollHorizontally) "Vertical View" else "Horizontal View"
-                    )
+ Text(
+ text = if (scrollHorizontally) "Vertical View" else "Horizontal View"
+ )
+                }
+                IconButton(onClick = { /* TODO: Implement Home navigation */ }) {
+ Icon(
+ imageVector = Icons.Filled.Home,
+ contentDescription = "Home"
+ )
+                }
+                IconButton(onClick = { /* TODO: Implement Settings navigation */ }) {
+ Icon(
+ imageVector = Icons.Filled.MoreVert,
+ contentDescription = "Settings"
+ )
                 }
             }
         )

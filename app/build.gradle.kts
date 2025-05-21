@@ -12,8 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.jellyfinryan"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
@@ -32,10 +32,16 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
+        compilerExtensionVersion = "1.5.11"
     }
 
     buildFeatures {
         compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerArgs += "-Pandroidx.compose.compiler.reportMetrics=true"
+        kotlinCompilerArgs += "-Pandroidx.compose.compiler.reportClasses=true"
     }
 }
 
@@ -73,7 +79,9 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.ui.tooling)
     implementation(libs.retrofit)
-    implementation(libs.converter.gson)
+    implementation(libs.converter.gson) // Keep this dependency
+    implementation(libs.androidx.media3.exoplayer) // Add Media3 Exoplayer dependency
+    implementation(libs.androidx.media3.ui) // Add Media3 UI dependency
 }
 
 dependencies {
