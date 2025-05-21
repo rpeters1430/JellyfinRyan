@@ -1,4 +1,3 @@
-// EpisodeListScreen.kt
 package com.example.jellyfinryan.ui.screens
 
 import android.media.browse.MediaBrowser
@@ -13,9 +12,7 @@ import androidx.tv.material3.Text
 import com.example.jellyfinryan.data.model.MediaItem
 
 @Composable
-fun EpisodeListScreen(
-    episodes: List<MediaBrowser.MediaItem>
-) {
+fun EpisodeListScreen(episodes: List<MediaBrowser.MediaItem>) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -29,9 +26,9 @@ fun EpisodeListScreen(
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(episodes) { episode ->
+            items(episodes) { ep ->
                 Text(
-                    text = episode.Name ?: "",
+                    text = ep.Name ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     modifier = Modifier.fillMaxWidth()
