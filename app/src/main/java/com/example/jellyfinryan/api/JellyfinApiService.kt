@@ -32,6 +32,16 @@ data class User(
 data class UserViewsResponse(val Items: List<JellyfinItem>)
 data class LibraryItemsResponse(val Items: List<JellyfinItem>)
 interface JellyfinApiService {
+    data class PlaybackInfoDto(
+        @SerializedName("MediaSources")
+        val MediaSources: List<MediaSourceDto>
+    )
+
+    data class MediaSourceDto(
+        @SerializedName("Id") val Id: String?,
+        @SerializedName("Path") val Path: String?,
+        @SerializedName("Container") val Container: String?,
+    )
     // Fetch all seasons for a show
     @GET("Shows/{showId}/Seasons")
     suspend fun getSeasons(
@@ -63,6 +73,13 @@ interface JellyfinApiService {
         @Query("Limit") limit: Int?,
         @Header("X-Emby-Token") authToken: String
     ): LibraryItemsResponse
+
+    @GET("Items/{itemId}/PlaybackInfo")
+    suspend fun getPlaybackInfo(
+        @Path("itemId") itemId: String,
+        @Query("UserId") userId: String,
+        @Header("X-Emby-Token") authToken: String
+    ): PlaybackInfoDto
 }
 
 

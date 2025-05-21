@@ -20,6 +20,7 @@ import com.example.jellyfinryan.viewmodel.LibraryDetailViewModel
 import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import com.example.jellyfinryan.api.model.JellyfinItem
 
+
 @Composable
 fun LibraryDetailScreen(
     libraryId: String,
