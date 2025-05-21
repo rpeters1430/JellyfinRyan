@@ -20,7 +20,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,12 +32,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.Tab
+import androidx.tv.material3.TabRow
 import androidx.tv.material3.MaterialTheme
+import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import androidx.tv.material3.Text
+import com.example.jellyfinryan.ui.components.MediaItemCard
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.HomeViewModel
 
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onBrowseLibrary: (String) -> Unit,
@@ -44,6 +53,7 @@ fun HomeScreen(
 ) {
     val libraries by viewModel.libraries.collectAsState()
     val libraryItems by viewModel.libraryItems.collectAsState(initial = emptyMap())
+    var selectedTabIndex by remember { mutableStateOf(0) }
     var focusedBackground by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -57,14 +67,33 @@ fun HomeScreen(
             )
         }
 
+        val tabTitles = listOf("Featured", "Movies", "TV Shows")
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
             item {
-                Text(
-                    text = "Your Libraries",
+                TabRow(selectedTabIndex = selectedTabIndex) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onSelect = { selectedTabIndex = index },
+                            leadingIcon = {}, // Add icons here if needed
+                            text = { Text(title) }
+                        )
+                    }
+                }
+            }
+
+            item {
+ // TODO: Fetch featured data for the carousel
+ FeaturedCarousel(
+ items = featuredItems,
+ serverUrl = viewModel.getServerUrl(),
+ onItemClick = onItemClick
+ )
                     style = MaterialTheme.typography.headlineLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -157,37 +186,12 @@ fun HomeScreen(
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(items) { item ->
                             var isFocused by remember { mutableStateOf(false) }
-                            Column(
-                                modifier = Modifier
-                                    .width(160.dp)
-                                    .onFocusChanged {
-                                        isFocused = it.isFocused
-                                        if (it.isFocused) {
-                                            focusedBackground = item.getImageUrl(viewModel.getServerUrl())
-                                        }
-                                    }
-                                    .focusable(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                item.getImageUrl(viewModel.getServerUrl())?.let { url ->
-                                    AsyncImage(
-                                        model = url,
-                                        contentDescription = item.Name,
-                                        modifier = Modifier
-                                            .height(240.dp)
-                                            .fillMaxWidth()
-                                            .clip(MaterialTheme.shapes.large)
-                                    )
-                                }
-                                Text(
-                                    text = item.Name,
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .padding(top = 4.dp)
-                                        .fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
+                            MediaItemCard(
+                                item = item,
+                                serverUrl = viewModel.getServerUrl(),
+                                onClick = { onItemClick(item.Id) },
+                                modifier = Modifier.onFocusChanged { isFocused = it.isFocused; if (it.isFocused) { focusedBackground = item.getImageUrl(viewModel.getServerUrl()) } }
+                            )
                         }
                     }
                 }
