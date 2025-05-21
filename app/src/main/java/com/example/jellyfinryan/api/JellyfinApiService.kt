@@ -22,6 +22,26 @@ data class AuthenticateResponse(
     val User: User
 )
 
+data class QuickConnectInitiateResponse(
+    val Code: String
+)
+
+data class QuickConnectConnectResponse(
+    val AuthenticationInfo: AuthenticationInfo?,
+    val Servers: List<ServerInfo>?
+)
+
+data class AuthenticationInfo(
+    val AccessToken: String,
+    val User: User
+)
+
+data class ServerInfo(
+    val Id: String,
+    val LocalAddress: String?,
+    val RemoteAddress: String?,
+    val ServerName: String?
+)
 data class ApiResponse<T>(
     val Items: List<T>
 )
@@ -80,6 +100,12 @@ interface JellyfinApiService {
         @Query("UserId") userId: String,
         @Header("X-Emby-Token") authToken: String
     ): PlaybackInfoDto
+
+    @POST("QuickConnect/Initiate")
+    suspend fun initiateQuickConnect(): QuickConnectInitiateResponse
+
+    @GET("QuickConnect/Connect")
+    suspend fun connectQuickConnect(@Query("secret") secret: String): QuickConnectConnectResponse
 }
 
 

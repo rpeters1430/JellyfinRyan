@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.JellyfinRepository
 import com.example.jellyfinryan.ui.screens.BrowseScreen
 import com.example.jellyfinryan.ui.screens.LibraryDetailScreen
 import com.example.jellyfinryan.ui.screens.EpisodeListScreen
@@ -18,6 +19,7 @@ import com.example.jellyfinryan.ui.screens.LoginScreen
 import com.example.jellyfinryan.ui.screens.ShowDetailScreen
 import com.example.jellyfinryan.ui.screens.MovieDetailScreen
 
+import com.example.jellyfinryan.ui.screens.SplashScreen
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
@@ -28,14 +30,22 @@ sealed class Screen(val route: String) {
     object ShowDetail : Screen("showDetail/{ItemId}")
     object LibraryDetail : Screen("libraryDetail/{libraryId}")
     object MovieDetail : Screen("movieDetail/{movieId}")
+    object Splash : Screen("splash")
 }
 
 @Composable
 fun JellyfinNavHost(
     navController: NavHostController,
-    startDestination: String
+    startDestination: String,
+    jellyfinRepository: JellyfinRepository
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                navController = navController,
+                jellyfinRepository = jellyfinRepository
+            )
+        }
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {

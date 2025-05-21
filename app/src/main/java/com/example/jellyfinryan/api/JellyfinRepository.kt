@@ -2,11 +2,14 @@ package com.example.jellyfinryan.api
 
 import android.util.Log
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.QuickConnectInitiateResponse
+import com.example.jellyfinryan.api.QuickConnectConnectResponse
 import com.example.jellyfinryan.data.preferences.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import com.example.jellyfinryan.api.PlaybackInfoDto
 import com.example.jellyfinryan.api.MediaSourceDto
 import kotlinx.coroutines.flow.flow
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
@@ -73,7 +76,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun tryAutoLogin(): Boolean {
         val creds = dataStoreManager.getCredentials()
         if (creds.serverUrl != null && creds.userId != null && creds.accessToken != null) {
-            serverUrl = creds.serverUrl
+            serverUrl = addSchemaIfMissing(creds.serverUrl)
             userId = creds.userId
             accessToken = creds.accessToken
             return true
@@ -89,10 +92,16 @@ class JellyfinRepository @Inject constructor(
     }
 
     private fun createRetrofit(serverUrl: String): Retrofit {
+        val urlWithSchema = addSchemaIfMissing(serverUrl)
         return Retrofit.Builder()
-            .baseUrl("$serverUrl/")
+            .baseUrl("$urlWithSchema/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    private fun addSchemaIfMissing(url: String): String {
+        return if (url.startsWith("http://") || url.startsWith("https://")) url
+        else "https://$url"
     }
 
     suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
@@ -245,6 +254,48 @@ class JellyfinRepository @Inject constructor(
         )
         // Flatten the list if necessary
         emit(response.Items.flatten())
+    }
+
+    suspend fun initiateQuickConnect(serverUrl: String): Result<String> {
+        return try {
+            val retrofit = createRetrofit(serverUrl)
+            val api = retrofit.create(JellyfinApiService::class.java)
+            val response = api.initiateQuickConnect()
+            Result.success(response.Code)
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Error initiating Quick Connect", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun pollQuickConnect(secret: String): Result<QuickConnectConnectResponse?> {
+        return try {
+            if (serverUrl.isEmpty()) {
+                return Result.failure(IllegalStateException("Server URL not set for polling"))
+            }
+            val retrofit = createRetrofit(serverUrl)
+            val api = retrofit.create(JellyfinApiService::class.java)
+            val response = api.connectQuickConnect(secret)
+            Result.success(response)
+        } catch (e: HttpException) {
+            // Handle specific HTTP errors, like 404 if not authorized yet
+            if (e.code() == 404) {
+                Result.success(null) // Not authorized yet
+            } else {
+                Log.e("JellyfinRepository", "HTTP error polling Quick Connect", e)
+                Result.failure(e)
+            }
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Error polling Quick Connect", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun saveQuickConnectCredentials(authInfo: AuthenticationInfo, serverUrl: String) {
+        accessToken = authInfo.AccessToken
+        userId = authInfo.User.Id
+        this.serverUrl = addSchemaIfMissing(serverUrl) // Ensure schema is saved
+        dataStoreManager.saveCredentials(this.serverUrl, userId, accessToken)
     }
 }
 

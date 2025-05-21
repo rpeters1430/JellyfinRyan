@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.compose.rememberNavController
 import com.example.jellyfinryan.api.JellyfinRepository
 import com.example.jellyfinryan.ui.navigation.JellyfinNavHost
 import com.example.jellyfinryan.ui.navigation.Screen
@@ -33,22 +32,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             JellyfinTVTheme {
-                val navController = rememberNavController()
-                var isLoading by remember { mutableStateOf(true) }
-                var isLoggedIn by remember { mutableStateOf(false) }
-
-                LaunchedEffect(Unit) {
-                    isLoggedIn = jellyfinRepository.tryAutoLogin()
-                    isLoading = false
-                }
-
-                if (isLoading) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                } else {
+                JellyfinNavHost(
+                    jellyfinRepository = jellyfinRepository, // Pass the repository
+                    startDestination = Screen.Splash.route // Set Splash as the starting destination
                     JellyfinNavHost(
                         navController = navController,
                         startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
