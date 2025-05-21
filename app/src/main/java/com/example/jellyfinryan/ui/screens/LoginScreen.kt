@@ -1,36 +1,26 @@
+// LoginScreen.kt
 package com.example.jellyfinryan.ui.screens
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Button
-import androidx.tv.material3.Text
-import com.example.jellyfinryan.data.preferences.DataStoreManager
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import androidx.tv.material3.OutlinedTextField
+import androidx.tv.material3.Text
+import androidx.tv.material3.Button
+import com.example.jellyfinryan.data.DataStoreManager
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    dataStore: DataStoreManager,
+    dataStoreManager: DataStoreManager,
     onLoginSuccess: () -> Unit
 ) {
     var serverUrl by remember { mutableStateOf("") }
-    var username  by remember { mutableStateOf("") }
-    var password  by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -38,42 +28,48 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        verticalArrangement = Arrangement.Center
     ) {
         OutlinedTextField(
             value = serverUrl,
             onValueChange = { serverUrl = it },
             label = { Text("Server URL") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            singleLine = true
         )
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
             label = { Text("Username") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            singleLine = true
         )
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            visualTransformation = PasswordVisualTransformation()
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
                 scope.launch {
                     isLoading = true
-                    dataStore.saveCredentials(serverUrl, username, password)
+                    val success = dataStoreManager.authenticate(serverUrl, username, password)
                     isLoading = false
-                    onLoginSuccess()
+                    if (success) onLoginSuccess()
                 }
             },
-            enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         ) {
             Text("Connect")
         }
