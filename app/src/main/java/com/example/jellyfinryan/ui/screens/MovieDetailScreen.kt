@@ -30,6 +30,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.compose.ui.unit.sp
 import com.example.jellyfinryan.ui.navigation.Screen
 
+import com.example.jellyfinryan.api.MediaTechnicalDetails
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,7 @@ fun MovieDetailScreen(
     val viewModel: MovieDetailViewModel = hiltViewModel()
     val movieDetails by viewModel.movieDetails.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+ val technicalDetails by viewModel.technicalDetails.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
     Box(
@@ -105,6 +107,16 @@ fun MovieDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         movie.Overview?.let { overview ->
                             Text(text = overview, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        technicalDetails?.videoResolution?.let { resolution ->
+                            Text(text = "Resolution: $resolution", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
+                        }
+                        technicalDetails?.videoCodec?.let { codec ->
+                            Text(text = "Video Codec: $codec", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
+                        }
+                        technicalDetails?.audioCodec?.let { codec ->
+                            Text(text = "Audio Codec: $codec", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
                         }
                         Spacer(modifier = Modifier.weight(1f)) // Push content to the bottom
                         Button(

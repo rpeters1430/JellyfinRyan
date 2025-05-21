@@ -12,6 +12,13 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class MediaTechnicalDetails(
+ val videoResolution: String? = null,
+ val videoCodec: String? = null,
+ val audioCodec: String? = null,
+ val audioChannels: Int? = null
+)
+
 
 @Singleton
 class JellyfinRepository @Inject constructor(
@@ -162,24 +169,58 @@ class JellyfinRepository @Inject constructor(
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
     }
 
+    private val supportedContainers = listOf("mp4", "mkv", "hls")
+
     suspend fun getMediaStreamUrl(itemId: String): String? {
         return try {
             val playbackInfo = createRetrofit(serverUrl).create(JellyfinApiService::class.java).getPlaybackInfo(itemId = itemId, userId = userId, authToken = accessToken)
 
-            // Prioritize streams that don't require transcoding (simple heuristic: no '?' in path)
-            val directPlayStream = playbackInfo.MediaSources.firstOrNull { mediaSource ->
-                mediaSource.Path != null && !mediaSource.Path.contains('?')
-            }
-            if (directPlayStream != null) {
-                return directPlayStream.Path
+            val selectedMediaSource = playbackInfo.MediaSources.firstOrNull { mediaSource ->
+                mediaSource.SupportsDirectPlay == true
+            } ?: playbackInfo.MediaSources.firstOrNull { mediaSource ->
+                mediaSource.SupportsDirectStream == true && mediaSource.Container?.lowercase() in supportedContainers
+            } ?: playbackInfo.MediaSources.firstOrNull { mediaSource ->
+                mediaSource.Path != null && mediaSource.Path.endsWith(".m3u8")
+            } ?: playbackInfo.MediaSources.firstOrNull { mediaSource ->
+                mediaSource.Path != null
             }
 
-            // If no direct play stream, prioritize HLS streams (.m3u8)
-            val hlsStream = playbackInfo.MediaSources.firstOrNull { mediaSource -> mediaSource.Path != null && mediaSource.Path.endsWith(".m3u8") }
-            hlsStream?.Path ?: playbackInfo.MediaSources.firstOrNull()?.Path // Fallback to the first stream
+            selectedMediaSource?.Path
+
 
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "Error getting media stream URL for item ID: $itemId", e)
+            null
+        }
+    }
+
+    suspend fun getMediaTechnicalDetails(itemId: String): MediaTechnicalDetails? {
+        return try {
+            val playbackInfo = createRetrofit(serverUrl).create(JellyfinApiService::class.java).getPlaybackInfo(itemId = itemId, userId = userId, authToken = accessToken)
+
+            var videoResolution: String? = null
+            var videoCodec: String? = null
+            var audioCodec: String? = null
+            var audioChannels: Int? = null
+
+            // Assuming MediaSources contain Streams
+            playbackInfo.MediaSources.forEach { mediaSource ->
+                mediaSource.MediaStreams?.forEach { stream ->
+                    when (stream.Type) {
+                        "Video" -> {
+                            videoResolution = "${stream.Width ?: ""}x${stream.Height ?: ""}".trim('x')
+                            videoCodec = stream.Codec
+                        }
+                        "Audio" -> {
+                            audioCodec = stream.Codec
+                            audioChannels = stream.Channels
+                        }
+                    }
+                }
+            }
+            MediaTechnicalDetails(videoResolution, videoCodec, audioCodec, audioChannels)
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Error getting media technical details for item ID: $itemId", e)
             null
         }
     }

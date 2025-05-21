@@ -25,7 +25,7 @@ fun FeaturedCarousel(
         items(items) { item ->
             AsyncImage(
                 model = item.getImageUrl(serverUrl),
-                contentDescription = item.Name,
+                model = item.getImageUrl(serverUrl, listOf("Backdrop", "Primary")),
                 modifier = Modifier
                     .fillParentMaxWidth(0.8f) // Make images take up a large portion of the width
                     .aspectRatio(16f / 9f) // Typical landscape aspect ratio
