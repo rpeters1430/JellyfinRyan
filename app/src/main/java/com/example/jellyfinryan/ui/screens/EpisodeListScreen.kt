@@ -1,70 +1,41 @@
+// EpisodeListScreen.kt
 package com.example.jellyfinryan.ui.screens
 
+import android.media.browse.MediaBrowser
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.MaterialTheme
-import coil.compose.AsyncImage
-import com.example.jellyfinryan.viewmodel.EpisodeListViewModel
+import androidx.tv.material3.Text
+import com.example.jellyfinryan.data.model.MediaItem
 
 @Composable
 fun EpisodeListScreen(
-    seasonId: String,
-    viewModel: EpisodeListViewModel = hiltViewModel()
+    episodes: List<MediaBrowser.MediaItem>
 ) {
-    val episodes by viewModel.episodes.collectAsState()
-
-    LaunchedEffect(seasonId) {
-        viewModel.loadEpisodes(seasonId)
-    }
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text(
             text = "Episodes",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(episodes) { episode ->
-                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    episode.getImageUrl(viewModel.getServerUrl())?.let { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = episode.Name,
-                            modifier = Modifier
-                                .height(240.dp)
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.large)
-                        )
-                    }
-                    Text(
-                        text = episode.Name,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .width(160.dp)
-                    )
-                }
+                Text(
+                    text = episode.Name ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
