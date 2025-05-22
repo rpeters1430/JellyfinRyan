@@ -20,8 +20,12 @@ class HomeViewModel @Inject constructor(
     private val _libraryItems = MutableStateFlow<Map<String, List<JellyfinItem>>>(emptyMap())
     val libraryItems: StateFlow<Map<String, List<JellyfinItem>>> = _libraryItems.asStateFlow()
 
+    private val _featured = MutableStateFlow<List<JellyfinItem>>(emptyList())
+    val featured: StateFlow<List<JellyfinItem>> = _featured.asStateFlow()
+
     init {
         fetchLibraries()
+        loadFeatured()
     }
 
     private fun fetchLibraries() {
@@ -46,6 +50,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun loadFeatured() {
+        viewModelScope.launch {
+            repository.getFeaturedItems().collect {
+                _featured.value = it
+            }
+        }
+    }
+
     fun getServerUrl(): String = repository.getServerUrl()
 }
+
 

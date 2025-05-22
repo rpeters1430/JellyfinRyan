@@ -10,7 +10,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
-
 @Singleton
 class JellyfinRepository @Inject constructor(
     private val dataStoreManager: DataStoreManager
@@ -35,10 +34,7 @@ class JellyfinRepository @Inject constructor(
             val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
 
-            // Construct the X-Emby-Authorization header
             val authHeader = buildAuthorizationHeader()
-
-            // Send authentication request with header and body
             val response = api.authenticateUserByName(
                 authHeader,
                 AuthenticateUserByNameRequest(username, password)
@@ -47,7 +43,6 @@ class JellyfinRepository @Inject constructor(
             accessToken = response.AccessToken
             userId = response.User.Id
 
-            // Save credentials
             dataStoreManager.saveCredentials(
                 url = serverUrl,
                 userId = userId,
@@ -90,10 +85,7 @@ class JellyfinRepository @Inject constructor(
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
-        val views = api.getUserViews(
-            userId = userId,
-            authToken = accessToken
-        )
+        val views = api.getUserViews(userId, accessToken)
         emit(views.Items)
     }
 
@@ -121,10 +113,41 @@ class JellyfinRepository @Inject constructor(
             parentId = libraryId,
             sortBy = "SortName",
             sortOrder = "Ascending",
-            limit = null, // Remove limit to fetch full list
+            limit = null,
             authToken = accessToken
         )
         emit(response.Items)
+    }
+
+    suspend fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val response = api.getItems(
+            userId = userId,
+            parentId = null.toString(),
+            sortBy = "DateCreated",
+            sortOrder = "Descending",
+            limit = 10,
+            authToken = accessToken
+        )
+        emit(response.Items)
+    }
+
+    suspend fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val response = api.getSeasons(showId, accessToken)
+        emit(response.Items.flatten())
+    }
+
+    suspend fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+
+        val response = api.getEpisodes(seasonId, accessToken)
+        emit(response.Items.flatten())
     }
 
     suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
@@ -143,27 +166,6 @@ class JellyfinRepository @Inject constructor(
 
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
     }
-    suspend fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
-        val retrofit = createRetrofit(serverUrl)
-        val api = retrofit.create(JellyfinApiService::class.java)
-
-        val response = api.getSeasons(
-            showId = showId,
-            authToken = accessToken
-        )
-        // Flatten the list if necessary
-        emit(response.Items.flatten())
-    }
-    suspend fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
-        val retrofit = createRetrofit(serverUrl)
-        val api = retrofit.create(JellyfinApiService::class.java)
-
-        val response = api.getEpisodes(
-            seasonId = seasonId,
-            authToken = accessToken
-        )
-        // Flatten the list if necessary
-        emit(response.Items.flatten())
-    }
 }
+
 
