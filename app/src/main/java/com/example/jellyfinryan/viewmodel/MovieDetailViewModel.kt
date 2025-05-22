@@ -2,7 +2,6 @@ package com.example.jellyfinryan.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.jellyfinryan.api.MediaTechnicalDetails
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinryan.api.JellyfinRepository
 import com.example.jellyfinryan.api.model.JellyfinItem
@@ -30,9 +29,6 @@ class MovieDetailViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    private val _technicalDetails = MutableStateFlow<MediaTechnicalDetails?>(null)
-    val technicalDetails: StateFlow<MediaTechnicalDetails?> = _technicalDetails.asStateFlow()
-
     init {
         fetchMovieDetails(movieId)
     }
@@ -44,7 +40,6 @@ class MovieDetailViewModel @Inject constructor(
             try {
                 repository.getItemDetails(movieId).collect {
                     _movieDetails.value = it
-                    _technicalDetails.value = repository.getMediaTechnicalDetails(movieId)
                 }
             } catch (e: Exception) {
                 _error.value = e.message

@@ -14,23 +14,16 @@ data class JellyfinItem(
     val ParentId: String?,
     val BackdropImageTags: List<String>?
 ) {
- fun getImageUrl(serverUrl: String, imageTypePriority: List<String> = listOf("Primary")): String? {
- for (imageType in imageTypePriority) {
-            val tag = when (imageType) {
-                "Primary" -> PrimaryImageTag
-                "Backdrop" -> BackdropImageTags?.firstOrNull()
-                else -> ImageTags?.get(imageType)
-            }
-
-            tag?.let {
-                return "$serverUrl/Items/$Id/Images/$imageType?tag=$it"
-            }
-
- ImageTags?.get(imageType)?.let {
- return "$serverUrl/Items/$Id/Images/$imageType?tag=$it"
-            }
+    fun getImageUrl(serverUrl: String): String? {
+        PrimaryImageTag?.let {
+            return "$serverUrl/Items/$Id/Images/Primary?tag=$it"
         }
- return null
+
+        ImageTags?.get("Primary")?.let {
+            return "$serverUrl/Items/$Id/Images/Primary?tag=$it"
+        }
+
+        return null
     }
 
     fun getRunTimeMinutes(): Int? {
