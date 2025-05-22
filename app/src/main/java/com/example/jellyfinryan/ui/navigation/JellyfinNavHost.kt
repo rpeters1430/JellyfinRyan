@@ -10,9 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.ui.screens.BrowseScreen
-import com.example.jellyfinryan.ui.screens.LibraryDetailScreen
 import com.example.jellyfinryan.ui.screens.EpisodeListScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
 import com.example.jellyfinryan.ui.screens.ShowDetailScreen
@@ -25,7 +23,6 @@ sealed class Screen(val route: String) {
     object Player : Screen("player/{itemId}")
     object Episodes : Screen("episodes/{seasonId}")
     object ShowDetail : Screen("showDetail/{ItemId}")
-    object LibraryDetail : Screen("libraryDetail/{libraryId}")
 }
 
 @Composable
@@ -46,7 +43,7 @@ fun JellyfinNavHost(
 
         composable(Screen.Home.route) {
             HomeScreen(
-                onBrowseLibrary = { navController.navigate(Screen.LibraryDetail.route.replace("{libraryId}", it)) },
+                onBrowseLibrary = { navController.navigate("browse/$it") },
                 onItemClick = { navController.navigate("detail/$it") }
             )
         }
@@ -87,26 +84,7 @@ fun JellyfinNavHost(
 
         composable(Screen.Episodes.route) { backStackEntry ->
             val seasonId = backStackEntry.arguments?.getString("seasonId") ?: ""
-            EpisodeListScreen(
-                seasonId = seasonId,
-                onEpisodeClick = { episodeId ->
-                    navController.navigate(Screen.Player.route.replace("{itemId}", episodeId))
-                }
-            )
-        }
-
-        composable(Screen.LibraryDetail.route) { backStackEntry ->
-            val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
-
-            LibraryDetailScreen(
-                libraryId = libraryId,
-                onItemClick = { item: JellyfinItem ->
-                    when (item.type) {
-                        "Series" -> navController.navigate(Screen.ShowDetail.route.replace("{ItemId}", item.Id))
-                        else -> { /* TODO: Handle other item types like "Movie" */ }
-                    }
-                }
-            )
+            EpisodeListScreen(seasonId = seasonId)
         }
     }
 }

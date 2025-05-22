@@ -40,7 +40,6 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
-import com.example.jellyfinryan.ui.components.MediaItemCard
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.BrowseViewModel
 
@@ -135,11 +134,33 @@ fun BrowseScreen(
             ) {
                 items(allItems.sortedBy { it.Name }) { item ->
                     Column(
- MediaItemCard(
- item = item,
- serverUrl = viewModel.getServerUrl(),
- onClick = { onItemClick(item.Id) }
+                        modifier = Modifier
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    // Optional: handle focus changes
+                                }
+                            }
+                            .focusable(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        item.getImageUrl(viewModel.getServerUrl())?.let { url ->
+                            AsyncImage(
+                                model = url,
+                                contentDescription = item.Name,
+                                modifier = Modifier
+                                    .height(240.dp)
+                                    .width(160.dp)
+                                    .clip(MaterialTheme.shapes.large)
+                            )
+                        }
+                        Text(
+                            text = item.Name,
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .width(160.dp),
+                            textAlign = TextAlign.Center,
+                            color = Color.White
+                        )
                     }
                 }
             }

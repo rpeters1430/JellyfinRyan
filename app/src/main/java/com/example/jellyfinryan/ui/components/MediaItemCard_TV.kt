@@ -20,10 +20,11 @@ import com.example.jellyfinryan.api.model.JellyfinItem
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun MediaItemCard(
+fun MediaCard(
     item: JellyfinItem,
     serverUrl: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
 

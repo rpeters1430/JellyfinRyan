@@ -20,15 +20,6 @@ class HomeViewModel @Inject constructor(
     private val _libraryItems = MutableStateFlow<Map<String, List<JellyfinItem>>>(emptyMap())
     val libraryItems: StateFlow<Map<String, List<JellyfinItem>>> = _libraryItems.asStateFlow()
 
-    private val _featuredItems = MutableStateFlow<List<JellyfinItem>>(emptyList())
-    val featuredItems: StateFlow<List<JellyfinItem>> = _featuredItems.asStateFlow()
-
- private val _isLoading = MutableStateFlow(false)
- val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
- private val _error = MutableStateFlow<String?>(null)
- val error: StateFlow<String?> = _error.asStateFlow()
-
     init {
         fetchLibraries()
     }
@@ -36,56 +27,25 @@ class HomeViewModel @Inject constructor(
     private fun fetchLibraries() {
         viewModelScope.launch {
             repository.getUserViews().collect { views ->
-                _isLoading.value = true
- _error.value = null
- try {
- _libraries.value = views
+                _libraries.value = views
 
- views.forEach { library ->
- fetchItemsForLibrary(library.Id)
- }
-
- val tvLibrary = views.find { it.CollectionType == "tvshows" }
- tvLibrary?.let {
- fetchFeaturedItems(it.Id)
- }
- } catch (e: Exception) {
- _error.value = e.message
- } finally {
- _isLoading.value = false
- }
+                views.forEach { library ->
+                    fetchItemsForLibrary(library.Id)
+                }
             }
         }
     }
 
     private fun fetchItemsForLibrary(libraryId: String) {
         viewModelScope.launch {
- _isLoading.value = true
- _error.value = null
- try {
             repository.getLibraryItems(libraryId).collect { items ->
                 _libraryItems.update { current ->
                     current + (libraryId to items)
                 }
             }
- } catch (e: Exception) {
- _error.value = e.message
- } finally {
- _isLoading.value = false
- }
         }
     }
 
-    fun fetchFeaturedItems(libraryId: String) {
-        viewModelScope.launch {
- _isLoading.value = true
- _error.value = null
- try {
-            repository.getLibraryItems(libraryId).collect { items ->
-                _featuredItems.value = items
-            }
-        }
-    }
     fun getServerUrl(): String = repository.getServerUrl()
 }
 

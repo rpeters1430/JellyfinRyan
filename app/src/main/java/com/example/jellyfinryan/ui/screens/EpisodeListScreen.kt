@@ -1,39 +1,27 @@
 package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.focusable
-import androidx.compose.runtime.*
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.focus.isFocused
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.MaterialTheme
 import coil.compose.AsyncImage
-import com.example.jellyfinryan.ui.components.MediaItemCard
-import androidx.tv.foundation.lazy.list.rememberLazyListState
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.viewmodel.EpisodeListViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
+fun EpisodeListScreen(
     seasonId: String,
-    onEpisodeClick: (String) -> Unit = {}, // Added default empty lambda
     viewModel: EpisodeListViewModel = hiltViewModel()
 ) {
     val episodes by viewModel.episodes.collectAsState()
@@ -57,11 +45,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
             modifier = Modifier.fillMaxSize()
         ) {
             items(episodes) { episode ->
-                MediaItemCard(
-                    item = episode,
-                    serverUrl = viewModel.getServerUrl(),
-                    onClick = { /* TODO: Handle episode click */ }
-                )
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    episode.getImageUrl(viewModel.getServerUrl())?.let { url ->
+                        AsyncImage(
+                            model = url,
+                            contentDescription = episode.Name,
+                            modifier = Modifier
+                                .height(240.dp)
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.large)
+                        )
+                    }
+                    Text(
+                        text = episode.Name,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .width(160.dp)
+                    )
+                }
             }
         }
     }
