@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,7 +40,6 @@ import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.ShowDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
-
 @Composable
 fun ShowDetailScreen(
     showId: String,
@@ -56,23 +53,13 @@ fun ShowDetailScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     var focusedBackground by remember { mutableStateOf<String?>(null) }
 
-    // Determine the background image URL: focused season image if available, otherwise show image
-    val backgroundImageUrl = focusedBackground ?: showDetails?.getImageUrl(viewModel.getServerUrl())
-
     Box(modifier = Modifier.fillMaxSize()) {
- backgroundImageUrl?.let { url ->
+        focusedBackground?.let { url ->
             AsyncImage(
                 model = url,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize()
- .background(
- Brush.verticalGradient(
- listOf(Color.Transparent, Color.Black),
- startY = 0f,
- endY = 1000f
- )
- )
-
+                modifier = Modifier.fillMaxSize(),
+                alpha = 0.3f // Adjust opacity as needed
             )
         }
 

@@ -16,7 +16,6 @@ import com.example.jellyfinryan.ui.screens.LibraryDetailScreen
 import com.example.jellyfinryan.ui.screens.EpisodeListScreen
 import com.example.jellyfinryan.ui.screens.LoginScreen
 import com.example.jellyfinryan.ui.screens.ShowDetailScreen
-import com.example.jellyfinryan.ui.screens.MovieDetailScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -27,7 +26,6 @@ sealed class Screen(val route: String) {
     object Episodes : Screen("episodes/{seasonId}")
     object ShowDetail : Screen("showDetail/{ItemId}")
     object LibraryDetail : Screen("libraryDetail/{libraryId}")
-    object MovieDetail : Screen("movieDetail/{movieId}")
 }
 
 @Composable
@@ -105,18 +103,7 @@ fun JellyfinNavHost(
                 onItemClick = { item: JellyfinItem ->
                     when (item.type) {
                         "Series" -> navController.navigate(Screen.ShowDetail.route.replace("{ItemId}", item.Id))
-                        "Movie" -> navController.navigate(Screen.MovieDetail.route.replace("{movieId}", item.Id))
-                        else -> { /* Handle other item types if needed */ }
-                    }
-                }
-            )
-        }
-
-        composable(Screen.MovieDetail.route) { backStackEntry ->
-            val movieId = backStackEntry.arguments?.getString("movieId") ?: ""
-            MovieDetailScreen(
-                movieId = movieId,
-                onBackClick = { navController.popBackStack() }
+                        else -> { /* TODO: Handle other item types like "Movie" */ }
                     }
                 }
             )

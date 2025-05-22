@@ -4,8 +4,6 @@ import android.util.Log
 import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.data.preferences.DataStoreManager
 import kotlinx.coroutines.flow.Flow
-import com.example.jellyfinryan.api.PlaybackInfoDto
-import com.example.jellyfinryan.api.MediaSourceDto
 import kotlinx.coroutines.flow.flow
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -129,26 +127,10 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items)
     }
 
-    suspend fun getItem(itemId: String): JellyfinItem? {
-        return try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            val response = api.getItems(
-                userId = userId,
-                ids = itemId, // Filter by the specific itemId
-                authToken = accessToken
-            )
-            response.Items.firstOrNull() // Return the first item if the list is not empty
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Error fetching item with ID: $itemId", e)
-            null
-        }
-    }
-
     suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
-        emit(getItem(itemId))
+        emit(null)
     }
+
     suspend fun getPlaybackUrl(itemId: String): String? {
         return null
     }
@@ -160,28 +142,6 @@ class JellyfinRepository @Inject constructor(
         val deviceId = "android-emulator"
 
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
-    }
-
-    suspend fun getMediaStreamUrl(itemId: String): String? {
-        return try {
-            val playbackInfo = createRetrofit(serverUrl).create(JellyfinApiService::class.java).getPlaybackInfo(itemId = itemId, userId = userId, authToken = accessToken)
-
-            // Prioritize streams that don't require transcoding (simple heuristic: no '?' in path)
-            val directPlayStream = playbackInfo.MediaSources.firstOrNull { mediaSource ->
-                mediaSource.Path != null && !mediaSource.Path.contains('?')
-            }
-            if (directPlayStream != null) {
-                return directPlayStream.Path
-            }
-
-            // If no direct play stream, prioritize HLS streams (.m3u8)
-            val hlsStream = playbackInfo.MediaSources.firstOrNull { mediaSource -> mediaSource.Path != null && mediaSource.Path.endsWith(".m3u8") }
-            hlsStream?.Path ?: playbackInfo.MediaSources.firstOrNull()?.Path // Fallback to the first stream
-
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Error getting media stream URL for item ID: $itemId", e)
-            null
-        }
     }
     suspend fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
