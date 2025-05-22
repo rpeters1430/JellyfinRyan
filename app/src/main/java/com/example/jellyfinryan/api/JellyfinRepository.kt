@@ -81,7 +81,7 @@ class JellyfinRepository @Inject constructor(
             .build()
     }
 
-    suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
+    fun getUserViews(): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -89,7 +89,7 @@ class JellyfinRepository @Inject constructor(
         emit(views.Items)
     }
 
-    suspend fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
+    fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -104,7 +104,7 @@ class JellyfinRepository @Inject constructor(
         emit(items.Items)
     }
 
-    suspend fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
+    fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -119,7 +119,7 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items)
     }
 
-    suspend fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
+    fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -134,7 +134,7 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items)
     }
 
-    suspend fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
+    fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -142,7 +142,7 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items.flatten())
     }
 
-    suspend fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
+    fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -150,11 +150,11 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items.flatten())
     }
 
-    suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
+    fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
         emit(null)
     }
 
-    suspend fun getPlaybackUrl(itemId: String): String? {
+    fun getPlaybackUrl(itemId: String): String? {
         return null
     }
 

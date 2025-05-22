@@ -61,29 +61,25 @@ fun HomeScreen(
                         .padding(bottom = 16.dp)
                 ) { index ->
                     val item = featuredItems[index]
-                    CarouselItem(
-                        modifier = Modifier.fillMaxSize(),
-                        background = {
-                            item.BackdropImageTags?.firstOrNull()?.let { tag ->
-                                AsyncImage(
-                                    model = "$serverUrl/Items/${item.Id}/Images/Backdrop?tag=$tag",
-                                    contentDescription = item.Name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        },
-                        overlay = {
-                            Text(
-                                text = item.Name,
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.White,
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(16.dp)
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        item.BackdropImageTags?.firstOrNull()?.let { tag ->
+                            AsyncImage(
+                                model = "$serverUrl/Items/${item.Id}/Images/Backdrop?tag=$tag",
+                                contentDescription = item.Name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
-                    )
+
+                        Text(
+                            text = item.Name,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(16.dp)
+                        )
+                    }
                 }
             }
 
@@ -108,9 +104,8 @@ fun HomeScreen(
                                     if (it.isFocused) {
                                         focusedBackground = imageUrl
                                     }
-                                }
-                                .clip(MaterialTheme.shapes.extraLarge),
-                            shape = MaterialTheme.shapes.extraLarge,
+                                },
+                            shape = CardDefaults.shape(MaterialTheme.shapes.extraLarge),
                             scale = CardDefaults.scale(focusedScale = 1.1f)
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
