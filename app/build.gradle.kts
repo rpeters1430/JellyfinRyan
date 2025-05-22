@@ -1,9 +1,8 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp") version "2.0.0-1.0.21" // Add the KSP plugin and version
-    id("dagger.hilt.android.plugin")
-    id("org.jetbrains.kotlin.plugin.compose")
+        id("com.android.application")
+        id("org.jetbrains.kotlin.android")
+        id("dagger.hilt.android.plugin")
+        id("com.google.devtools.ksp")
 }
 
 android {
@@ -65,7 +64,6 @@ dependencies {
 
     // Dependency Injection - using an older version for better compatibility
     implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler) // Change from kapt to ksp
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.coil.compose)
     implementation(libs.androidx.datastore.preferences)
@@ -81,6 +79,8 @@ dependencies {
     implementation(libs.converter.gson) // Keep this dependency
     implementation(libs.androidx.media3.exoplayer) // Add Media3 Exoplayer dependency
     implementation(libs.androidx.media3.ui) // Add Media3 UI dependency
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }
 
 dependencies {
