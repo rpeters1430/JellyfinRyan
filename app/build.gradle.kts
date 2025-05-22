@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.provider.KotlinDslPluginSupport.kotlinCompilerArgs
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -32,7 +34,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
-        compilerExtensionVersion = "1.5.11"
+        var compilerExtensionVersion = "1.5.11"
     }
 
     buildFeatures {
@@ -85,6 +87,6 @@ dependencies {
 }
 
 dependencies {
-    implementation("androidx.media3:media3-exoplayer:1.3.1")
-    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation(libs.androidx.media3.exoplayer.v171)
+    implementation(libs.androidx.media3.ui.v171)
 }
