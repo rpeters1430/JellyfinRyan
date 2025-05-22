@@ -1,7 +1,6 @@
 package com.example.jellyfinryan.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
-import com.example.jellyfinryan.ui.common.UiState // Import UiState
 import androidx.lifecycle.ViewModel
 import com.example.jellyfinryan.api.MediaTechnicalDetails
 import androidx.lifecycle.viewModelScope
@@ -22,22 +21,29 @@ class MovieDetailViewModel @Inject constructor(
 
     private val movieId: String = savedStateHandle.get<String>("movieId") ?: ""
 
-    private val _uiState = MutableStateFlow<UiState<JellyfinItem?>>(UiState.Loading) // Use UiState
-    val uiState: StateFlow<UiState<JellyfinItem?>> = _uiState.asStateFlow()
+    private val _movieDetails = MutableStateFlow<JellyfinItem?>(null)
+    val movieDetails: StateFlow<JellyfinItem?> = _movieDetails.asStateFlow()
+
+    private val _isLoading = MutableStateFlow<Boolean>(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     private val _technicalDetails = MutableStateFlow<MediaTechnicalDetails?>(null)
     val technicalDetails: StateFlow<MediaTechnicalDetails?> = _technicalDetails.asStateFlow()
 
     init {
         fetchMovieDetails(movieId)
-        _uiState.value = UiState.Loading // Emit loading at the start
     }
 
     private fun fetchMovieDetails(movieId: String) {
+        _isLoading.value = true
+        _error.value = null
         viewModelScope.launch {
             try {
                 repository.getItemDetails(movieId).collect {
-                    _uiState.value = UiState.Success(it) // Emit Success with the data
+                    _movieDetails.value = it
                     _technicalDetails.value = repository.getMediaTechnicalDetails(movieId)
                 }
             } catch (e: Exception) {
@@ -45,6 +51,7 @@ class MovieDetailViewModel @Inject constructor(
             } finally {
                 _isLoading.value = false
             }
+        }
     }
 
     fun getServerUrl(): String = repository.getServerUrl()

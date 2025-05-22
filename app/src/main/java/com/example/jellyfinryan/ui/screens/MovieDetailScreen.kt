@@ -2,7 +2,6 @@ package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -22,7 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.MovieDetailViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,22 +28,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.MaterialTheme
 import androidx.compose.ui.unit.sp
-import com.example.jellyfinryan.ui.common.UiState
 import com.example.jellyfinryan.ui.navigation.Screen
 
 import com.example.jellyfinryan.api.MediaTechnicalDetails
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MovieDetailScreen(    
+fun MovieDetailScreen(
     movieId: String,
-    onBackClick: () -> Unit, // Add onBackClick for navigation
- onNavigateToHome: () -> Unit, // Add onNavigateToHome
- onNavigateToPlayer: (String) -> Unit // Add onNavigateToPlayer
+    onBackClick: () -> Unit // Add onBackClick for navigation
+ onNavigateToPlayer: (String) -> Unit
 ) {
     val viewModel: MovieDetailViewModel = hiltViewModel()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val technicalDetails by viewModel.technicalDetails.collectAsStateWithLifecycle() // Keep technicalDetails separate
+    val movieDetails by viewModel.movieDetails.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+ val technicalDetails by viewModel.technicalDetails.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -79,30 +77,9 @@ fun MovieDetailScreen(
                 .padding(16.dp)
         ) {
             // Back Button (positioned at the top)
- Row(
- modifier = Modifier.fillMaxWidth(),
- horizontalArrangement = Arrangement.SpaceBetween,
- verticalAlignment = Alignment.CenterVertically
- ) {
- IconButton(onClick = { onBackClick() }) {
- Icon(
- imageVector = Icons.AutoMirrored.Filled.ArrowBack,
- contentDescription = "Back",
- tint = Color.White
- )
- }
- 
- Row {
- IconButton(onClick = { onNavigateToHome() }) {
- Icon(
- imageVector = Icons.Filled.Home,
-                    contentDescription = "Back",
- tint = Color.White
- )
- }
- IconButton(onClick = { /* TODO: Implement Settings navigation */ }) {
- Icon(
- imageVector = Icons.Filled.Settings,
+            IconButton(onClick = { onBackClick() }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = Color.White
                 )
