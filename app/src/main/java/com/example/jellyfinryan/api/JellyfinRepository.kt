@@ -5,10 +5,14 @@ import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.data.preferences.DataStoreManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
+import retrofit2.HttpException
+
 
 @Singleton
 class JellyfinRepository @Inject constructor(
@@ -75,13 +79,22 @@ class JellyfinRepository @Inject constructor(
     }
 
     private fun createRetrofit(serverUrl: String): Retrofit {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val client = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
         return Retrofit.Builder()
             .baseUrl("$serverUrl/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    fun getUserViews(): Flow<List<JellyfinItem>> = flow {
+    suspend fun getUserViews(): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -89,7 +102,7 @@ class JellyfinRepository @Inject constructor(
         emit(views.Items)
     }
 
-    fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
+    suspend fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -99,12 +112,13 @@ class JellyfinRepository @Inject constructor(
             sortBy = "DateCreated",
             sortOrder = "Descending",
             limit = 10,
+            includeItemTypes = null,
             authToken = accessToken
         )
         emit(items.Items)
     }
 
-    fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
+    suspend fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -114,27 +128,37 @@ class JellyfinRepository @Inject constructor(
             sortBy = "SortName",
             sortOrder = "Ascending",
             limit = null,
+            includeItemTypes = null,
             authToken = accessToken
         )
         emit(response.Items)
     }
 
-    fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
-        val retrofit = createRetrofit(serverUrl)
-        val api = retrofit.create(JellyfinApiService::class.java)
+    suspend fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
+        try {
+            val retrofit = createRetrofit(serverUrl)
+            val api = retrofit.create(JellyfinApiService::class.java)
 
-        val response = api.getItems(
-            userId = userId,
-            parentId = null.toString(),
-            sortBy = "DateCreated",
-            sortOrder = "Descending",
-            limit = 10,
-            authToken = accessToken
-        )
-        emit(response.Items)
+            val response = api.getItems(
+                userId = userId,
+                parentId = null,
+                sortBy = "DateCreated",
+                sortOrder = "Descending",
+                limit = 10,
+                includeItemTypes = "Movie,Series,Episode",
+                authToken = accessToken
+            )
+            emit(response.Items)
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "Failed to load featured items: ${e.code()} ${e.message()}")
+            emit(emptyList())
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Unexpected error: ${e.message}")
+            emit(emptyList())
+        }
     }
 
-    fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
+    suspend fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -142,7 +166,7 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items.flatten())
     }
 
-    fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
+    suspend fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
         val retrofit = createRetrofit(serverUrl)
         val api = retrofit.create(JellyfinApiService::class.java)
 
@@ -150,11 +174,11 @@ class JellyfinRepository @Inject constructor(
         emit(response.Items.flatten())
     }
 
-    fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
+    suspend fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
         emit(null)
     }
 
-    fun getPlaybackUrl(itemId: String): String? {
+    suspend fun getPlaybackUrl(itemId: String): String? {
         return null
     }
 

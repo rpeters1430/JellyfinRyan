@@ -12,8 +12,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.jellyfinryan"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore.preferences.rxjava2)
     implementation(libs.androidx.datastore.preferences.rxjava3)
+    implementation(libs.logging.interceptor)
 
     // Testing
     testImplementation(libs.junit)

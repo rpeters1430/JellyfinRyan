@@ -1,3 +1,5 @@
+package com.example.jellyfinryan.ui.screens
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -70,7 +72,18 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
-
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Black.copy(alpha = 0.6f),
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                        )
                         Text(
                             text = item.Name,
                             style = MaterialTheme.typography.headlineSmall,
@@ -113,6 +126,7 @@ fun HomeScreen(
                                     AsyncImage(
                                         model = imageUrl,
                                         contentDescription = library.Name,
+                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
@@ -122,7 +136,6 @@ fun HomeScreen(
                                             .background(MaterialTheme.colorScheme.surfaceVariant)
                                     )
                                 }
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -135,12 +148,11 @@ fun HomeScreen(
                                             )
                                         )
                                 )
-
                                 Text(
                                     text = library.Name,
-                                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+                                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
                                     modifier = Modifier
-                                        .align(Alignment.Center)
+                                        .align(Alignment.BottomStart)
                                         .padding(12.dp)
                                 )
                             }
@@ -186,6 +198,7 @@ fun HomeScreen(
                                     AsyncImage(
                                         model = url,
                                         contentDescription = item.Name,
+                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .height(240.dp)
                                             .fillMaxWidth()
@@ -208,11 +221,3 @@ fun HomeScreen(
         }
     }
 }
-
-
-
-
-
-
-
-
