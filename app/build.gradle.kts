@@ -8,11 +8,11 @@ plugins {
 
 android {
     namespace = "com.example.jellyfinryan"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.jellyfinryan"
-        minSdk = 21
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -50,7 +50,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(libs.ui.tooling)
     implementation(libs.androidx.foundation)
 
