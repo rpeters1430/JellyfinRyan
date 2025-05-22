@@ -1,10 +1,9 @@
-import org.gradle.kotlin.dsl.provider.KotlinDslPluginSupport.kotlinCompilerArgs
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -14,7 +13,7 @@ android {
     defaultConfig {
         applicationId = "com.example.jellyfinryan"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 36 // Consider updating to 35 if compileSdk is 35, or update compileSdk
         versionCode = 1
         versionName = "1.0"
     }
@@ -22,7 +21,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
@@ -33,19 +35,15 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
-        var compilerExtensionVersion = "1.5.11"
+        // REMOVE THE UNUSED VARIABLE:
+        // var compilerExtensionVersion = "1.5.11"
     }
 
     buildFeatures {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerArgs += "-Pandroidx.compose.compiler.reportMetrics=true"
-        kotlinCompilerArgs += "-Pandroidx.compose.compiler.reportClasses=true"
-    }
 }
-
 dependencies {
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -86,6 +84,6 @@ dependencies {
 }
 
 dependencies {
-    implementation(libs.androidx.media3.exoplayer.v171)
-    implementation(libs.androidx.media3.ui.v171)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 }
