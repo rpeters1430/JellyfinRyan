@@ -1,7 +1,13 @@
-// package and other imports...
+package com.example.jellyfinryan.ui.screens // Ensure correct package
+
+// Keep existing needed imports: JellyfinItem, HomeViewModel, MediaCard, Coil AsyncImage, etc.
+import androidx.compose.animation.ContentTransform
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.* // Keep general layout modifiers
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn // Standard LazyColumn
+import androidx.compose.foundation.lazy.LazyRow    // Standard LazyRow
+import androidx.compose.foundation.lazy.items    // Standard items extension
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,55 +19,46 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController // Assuming you'll use this for navigation
+// import androidx.navigation.NavController // Not directly used in this Composable if clicks are handled via lambdas
+
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.ui.components.MediaCard // Your TV MediaCard
 import com.example.jellyfinryan.viewmodel.HomeViewModel
-import com.example.jellyfinryan.ui.components.MediaCard // Your updated TV MediaCard
 
 // TV specific imports
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyRow
-import androidx.tv.material3.Carousel // The component you wanted!
+import androidx.tv.material3.Carousel
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme // TV Material Theme
-import androidx.tv.material3.Surface // Base for TV Screens
-import androidx.tv.material3.Text // TV Text
-import androidx.tv.material3.Card as TvCard // Alias if you have a local 'Card'
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
+import androidx.tv.material3.Text
+import androidx.tv.material3.Card as TvCard // Alias for TV Card if needed
+import androidx.tv.material3.ContentTransform // For Carousel
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    // Assuming NavController is passed or obtained differently for TV navigation
-    // onItemClick: (String) -> Unit, // Handled by cards directly now
-    onBrowseLibrary: (libraryId: String, libraryName: String?) -> Unit, // Pass name for BrowseScreen title
+    onBrowseLibrary: (libraryId: String, libraryName: String?) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val libraries by viewModel.libraries.collectAsState()
-    // You might want to fetch a specific "featured" or "recently added" list for the main Carousel
-    // For now, let's assume the first few items from the first library can be featured
     val allItemsFromAllLibraries by viewModel.libraryItems.collectAsState(initial = emptyMap())
 
-    // Create a flat list of some items for the featured carousel, e.g., from recently added
-    // This logic should ideally be in your ViewModel
     val featuredItems = remember(allItemsFromAllLibraries) {
-        allItemsFromAllLibraries.values.flatten().shuffled().take(10) // Example: 10 random items
+        allItemsFromAllLibraries.values.flatten().shuffled().take(10)
     }
-
     var focusedBackgroundImageUrl by remember { mutableStateOf<String?>(null) }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background image layer
             focusedBackgroundImageUrl?.let { url ->
                 AsyncImage(
                     model = url,
                     contentDescription = "Focused item backdrop",
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop, // Crop to fill
-                    alpha = 0.2f // Dimmed
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.2f
                 )
-                // Add a scrim for better text readability over the background
                 Box(modifier = Modifier
                     .fillMaxSize()
                     .background(
@@ -73,22 +70,20 @@ fun HomeScreen(
                                 MaterialTheme.colorScheme.background
                             ),
                             startY = 0.0f,
-                            endY = Float.POSITIVE_INFINITY // Or a large number
+                            endY = 1000f // Adjust based on screen height
                         )
                     )
                 )
             }
 
-            TvLazyColumn(
+            LazyColumn( // Standard LazyColumn
                 modifier = Modifier.fillMaxSize(),
-                // Standard TV screen padding
                 contentPadding = PaddingValues(start = 58.dp, top = 28.dp, end = 58.dp, bottom = 28.dp)
             ) {
-                // 1. Featured Carousel Section
                 if (featuredItems.isNotEmpty()) {
-                    item {
+                    item { // Extension from androidx.compose.foundation.lazy.LazyListScope
                         Text(
-                            text = "Featured For You", // Carousel Title
+                            text = "Featured For You",
                             style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
@@ -96,18 +91,17 @@ fun HomeScreen(
                             itemCount = featuredItems.size,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(320.dp), // Adjust height based on your Card size + peek
-                            // autoScrollDurationMillis = 5000L, // Optional: auto-scroll
-                            contentTransformStartToEnd = ContentTransform.None, // Or other transforms
+                                .height(300.dp), // Card height (270) + some peek/padding
+                            contentTransformStartToEnd = ContentTransform.None,
                             contentTransformEndToStart = ContentTransform.None,
                         ) { index ->
                             val item = featuredItems[index]
-                            MediaCard( // Your TV-native card
+                            MediaCard(
                                 item = item,
                                 serverUrl = viewModel.getServerUrl(),
-                                onClick = { /* Handle item click, e.g., navigate to detail */ },
+                                onClick = { /* Navigate to item detail for item.Id */ },
                                 modifier = Modifier
-                                    .padding(horizontal = 8.dp) // Spacing between carousel items
+                                    .padding(horizontal = 8.dp)
                                     .onFocusChanged { focusState ->
                                         if (focusState.isFocused) {
                                             focusedBackgroundImageUrl = item.getImageUrl(viewModel.getServerUrl())
@@ -119,23 +113,20 @@ fun HomeScreen(
                     }
                 }
 
-
-                // 2. Libraries Section (Using TvLazyRow with TV Cards)
                 item {
                     Text(
                         text = "Your Libraries",
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    TvLazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        items(libraries) { library ->
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) { // Standard LazyRow
+                        items(libraries) { library -> // items from androidx.compose.foundation.lazy
                             val libraryImageUrl = library.getImageUrl(viewModel.getServerUrl())
-                            // Using TvCard directly here for a slightly different style for libraries
-                            TvCard(
+                            TvCard( // Using androidx.tv.material3.Card directly
                                 onClick = { onBrowseLibrary(library.Id, library.Name) },
                                 modifier = Modifier
-                                    .width(300.dp) // Wider for library representation
-                                    .height(170.dp)
+                                    .width(280.dp) // Library cards can be wider
+                                    .height(160.dp)
                                     .onFocusChanged { focusState ->
                                         if (focusState.isFocused) {
                                             focusedBackgroundImageUrl = libraryImageUrl
@@ -152,30 +143,17 @@ fun HomeScreen(
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
                                         )
-                                    } ?: Box(
-                                        Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant))
-
-                                    // Scrim for text readability
+                                    } ?: Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant))
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .background(
-                                                Brush.verticalGradient(
-                                                    colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                                                    startY = 0.0f,
-                                                    endY = 400f // Adjust endY based on card height
-                                                )
-                                            )
+                                            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent, Color.Black.copy(alpha = 0.6f))))
                                     )
                                     Text(
                                         text = library.Name,
                                         style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
                                         textAlign = TextAlign.Center,
-                                        modifier = Modifier
-                                            .align(Alignment.Center)
-                                            .padding(16.dp)
+                                        modifier = Modifier.align(Alignment.Center).padding(12.dp)
                                     )
                                 }
                             }
@@ -184,22 +162,21 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(32.dp))
                 }
 
-                // 3. "Recently Added" for each library (or other categories)
                 libraries.forEach { library ->
-                    val itemsInLibrary = allItemsFromAllLibraries[library.Id]?.take(10) ?: emptyList() // Take some items
+                    val itemsInLibrary = allItemsFromAllLibraries[library.Id]?.take(10) ?: emptyList()
                     if (itemsInLibrary.isNotEmpty()) {
-                        item {
+                        item { // LazyListScope item
                             Text(
-                                text = "Recently Added in ${library.Name}",
+                                text = "In ${library.Name}", // Simpler title
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
                             )
-                            TvLazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                items(itemsInLibrary) { item ->
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) { // Standard LazyRow
+                                items(itemsInLibrary) { item -> // items from androidx.compose.foundation.lazy
                                     MediaCard(
                                         item = item,
                                         serverUrl = viewModel.getServerUrl(),
-                                        onClick = { /* Handle item click */ },
+                                        onClick = { /* Navigate to item detail for item.Id */ },
                                         modifier = Modifier.onFocusChanged {focusState ->
                                             if(focusState.isFocused) {
                                                 focusedBackgroundImageUrl = item.getImageUrl(viewModel.getServerUrl())
