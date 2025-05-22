@@ -14,22 +14,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.jellyfinryan.ui.navigation.JellyfinNavHost
-import com.example.jellyfinryan.ui.screens.LoginScreen // Will need TV refactor
-import com.example.jellyfinryan.ui.theme.JellyfinRyanTheme // Your correct theme name
+import com.example.jellyfinryan.ui.screens.LoginScreen
+import com.example.jellyfinryan.ui.theme.JellyfinRyanTheme // Using your theme name
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
-// TV Imports
-import androidx.tv.material3.Surface // Correct TV Surface
-import androidx.tv.material3.Text     // Correct TV Text
-import androidx.tv.material3.CircularProgressIndicator // Correct TV CircularProgressIndicator
+// TV Imports:
+import androidx.tv.material3.Surface // TV Surface from the correct package
+import androidx.tv.material3.Text     // TV Text
+import androidx.tv.material3.CircularProgressIndicator // TV CircularProgressIndicator
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            JellyfinRyanTheme { // Use your actual theme name
+            JellyfinRyanTheme { // Correct theme name
                 val loginViewModel: LoginViewModel = hiltViewModel()
                 val isAuthenticated by loginViewModel.isAuthenticated.collectAsState()
                 val isLoading by loginViewModel.isLoading.collectAsState()
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator() // TV component
+                            CircularProgressIndicator() // From androidx.tv.material3
                         }
                     } else if (isAuthenticated) {
                         JellyfinNavHost(navController = navController)
@@ -58,9 +58,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DefaultPreview() {
     JellyfinRyanTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Surface(modifier = Modifier.fillMaxSize()) { // Added Surface for preview background
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Jellyfin TV Preview") // TV Text
+                Text(text = "Jellyfin for Android TV Preview") // TV Text
             }
         }
     }
