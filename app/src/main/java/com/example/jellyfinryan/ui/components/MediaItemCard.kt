@@ -1,47 +1,80 @@
 package com.example.jellyfinryan.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Card
-import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun MediaItemCard(
+fun MediaCard(
     item: JellyfinItem,
     serverUrl: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
     Card(
         onClick = onClick,
-        modifier = modifier.width(160.dp),
-        scale = CardDefaults.scale(focusedScale = 1.1f)
+        modifier = modifier
+            .width(160.dp)
+            .height(260.dp)
+            .scale(if (isFocused) 1.1f else 1f)
+            .focusable()
+            .onFocusChanged { isFocused = it.isFocused },
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column {
-            item.getImageUrl(serverUrl)?.let { url ->
-                AsyncImage(
-                    model = url,
-                    contentDescription = item.Name,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f / 3f)
+            ) {
+                item.getImageUrl(serverUrl)?.let { imageUrl ->
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.Name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } ?: Box(
                     modifier = Modifier
-                        .height(240.dp)
-                        .fillMaxWidth()
-                )
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item.Name.take(1),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
             }
 
-            Text(
-                text = item.Name,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(8.dp),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = item.Name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

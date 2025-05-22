@@ -31,13 +31,10 @@ fun HomeScreen(
 ) {
     val libraries by viewModel.libraries.collectAsState()
     val libraryItems by viewModel.libraryItems.collectAsState(initial = emptyMap())
-    val featuredItems by viewModel.featured.collectAsState(initial = emptyList())
     val serverUrl = viewModel.getServerUrl()
     var focusedBackground by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadFeatured()
-    }
+    val featuredLibraries = libraries.take(5)
 
     Box(modifier = Modifier.fillMaxSize()) {
         focusedBackground?.let { url ->
@@ -56,22 +53,22 @@ fun HomeScreen(
         ) {
             item {
                 Carousel(
-                    itemCount = featuredItems.size,
+                    itemCount = featuredLibraries.size,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp)
                         .padding(bottom = 16.dp)
                 ) { index ->
-                    val item = featuredItems[index]
+                    val item = featuredLibraries[index]
+                    val bannerUrl = "$serverUrl/Items/${item.Id}/Images/Banner"
+
                     Box(modifier = Modifier.fillMaxSize()) {
-                        item.BackdropImageTags?.firstOrNull()?.let { tag ->
-                            AsyncImage(
-                                model = "$serverUrl/Items/${item.Id}/Images/Backdrop?tag=$tag",
-                                contentDescription = item.Name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
+                        AsyncImage(
+                            model = bannerUrl,
+                            contentDescription = item.Name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -105,7 +102,8 @@ fun HomeScreen(
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(libraries) { library ->
-                        val imageUrl = library.getImageUrl(serverUrl)
+                        val bannerUrl = "$serverUrl/Items/${library.Id}/Images/Banner"
+                        val fallbackUrl = "$serverUrl/Items/${library.Id}/Images/Primary"
 
                         Card(
                             onClick = { onBrowseLibrary(library.Id) },
@@ -115,45 +113,18 @@ fun HomeScreen(
                                 .focusable()
                                 .onFocusChanged {
                                     if (it.isFocused) {
-                                        focusedBackground = imageUrl
+                                        focusedBackground = bannerUrl
                                     }
                                 },
                             shape = CardDefaults.shape(MaterialTheme.shapes.extraLarge),
                             scale = CardDefaults.scale(focusedScale = 1.1f)
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                if (imageUrl != null) {
-                                    AsyncImage(
-                                        model = imageUrl,
-                                        contentDescription = library.Name,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.verticalGradient(
-                                                listOf(
-                                                    Color.Black.copy(alpha = 0.6f),
-                                                    Color.Transparent
-                                                )
-                                            )
-                                        )
-                                )
-                                Text(
-                                    text = library.Name,
-                                    style = MaterialTheme.typography.headlineSmall.copy(color = Color.White),
-                                    modifier = Modifier
-                                        .align(Alignment.BottomStart)
-                                        .padding(12.dp)
+                                AsyncImage(
+                                    model = bannerUrl,
+                                    contentDescription = library.Name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
                         }
