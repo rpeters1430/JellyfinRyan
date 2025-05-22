@@ -1,78 +1,90 @@
 package com.example.jellyfinryan.ui.navigation
 
 import HomeScreen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel // Keep for ViewModels if needed here
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
 import com.example.jellyfinryan.ui.screens.BrowseScreen
-import com.example.jellyfinryan.ui.screens.EpisodeListScreen // Import if used
-import com.example.jellyfinryan.ui.screens.HomeScreen
-import com.example.jellyfinryan.ui.screens.LoginScreen // Import if used
-import com.example.jellyfinryan.ui.screens.ShowDetailScreen // Import if used
-import com.example.jellyfinryan.viewmodel.LoginViewModel // Import if used
+import com.example.jellyfinryan.ui.screens.EpisodeListScreen
+import com.example.jellyfinryan.ui.screens.LoginScreen
+import com.example.jellyfinryan.ui.screens.ShowDetailScreen
 
-// Re-define or ensure Screen object is accessible
-object Screen {
-    val Login = "login"
-    val Home = "home"
-    fun Browse(libraryId: String? = null, libraryName: String? = null): String {
-        val route = "browse"
-        if (libraryId == null) return route // For route definition
-        return "$route/$libraryId/${libraryName ?: "Unknown_Library"}"
-    }
-    fun ShowDetail(itemId: String? = null): String {
-        val route = "showDetail"
-        return if (itemId == null) route else "$route/$itemId"
-    }
-    // Add EpisodeList route similarly
+sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Home : Screen("home")
+    object Browse : Screen("browse/{libraryId}")
+    object Detail : Screen("detail/{itemId}")
+    object Player : Screen("player/{itemId}")
+    object Episodes : Screen("episodes/{seasonId}")
+    object ShowDetail : Screen("showDetail/{ItemId}")
 }
 
 @Composable
-fun JellyfinNavHost(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = Screen.Home) { // Use direct route string
-        composable(Screen.Home) {
-            HomeScreen(
-                // navController = navController, // Only pass if explicitly needed by HomeScreen
-                onBrowseLibrary = { libraryId, libraryName ->
-                    navController.navigate(Screen.Browse(libraryId = libraryId, libraryName = libraryName))
+fun JellyfinNavHost(
+    navController: NavHostController,
+    startDestination: String
+) {
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
                 }
-                // onItemClick is handled by individual cards in my HomeScreen suggestion
             )
         }
-        composable(
-            route = Screen.Browse() + "/{libraryId}/{libraryName}", // Define arguments in route string
-            arguments = listOf(
-                navArgument("libraryId") { type = NavType.StringType },
-                navArgument("libraryName") { type = NavType.StringType }
+
+        composable(Screen.Home.route) {
+            HomeScreen(
+                onBrowseLibrary = { navController.navigate("browse/$it") },
+                onItemClick = { navController.navigate("detail/$it") }
             )
-        ) { backStackEntry ->
-            val libraryId = backStackEntry.arguments?.getString("libraryId")
-            val libraryName = backStackEntry.arguments?.getString("libraryName")
-            if (libraryId != null) {
-                BrowseScreen(
-                    libraryId = libraryId,
-                    libraryName = libraryName,
-                    navController = navController
-                )
+        }
+
+        composable(Screen.Browse.route) { backStackEntry ->
+            val libraryId = backStackEntry.arguments?.getString("libraryId") ?: ""
+            BrowseScreen(
+                libraryId = libraryId,
+                onItemClick = { backStackEntrySaved ->
+                    navController.navigate("detail/$backStackEntrySaved")
+                },
+                onBackClick = {
+                    navController.popBackStack() // Handles back button navigation
+                }
+            )
+        }
+
+        composable(Screen.ShowDetail.route) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            ShowDetailScreen(
+                showId = itemId,
+                onSeasonClick = { seasonId ->
+                    navController.navigate("episodes/$seasonId")
+                },
+                onBackClick = { navController.popBackStack() } // <-- Here we pass the onBackClick
+            )
+        }
+
+        composable(Screen.Player.route) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Player Screen for item: $itemId")
             }
         }
-        composable(
-            route = Screen.ShowDetail() + "/{itemId}",
-            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString("itemId")
-            if (itemId != null) {
-                ShowDetailScreen(itemId = itemId, navController = navController)
-            }
+
+        composable(Screen.Episodes.route) { backStackEntry ->
+            val seasonId = backStackEntry.arguments?.getString("seasonId") ?: ""
+            EpisodeListScreen(seasonId = seasonId)
         }
-        composable(Screen.Login) {
-            val loginViewModel: LoginViewModel = hiltViewModel()
-            LoginScreen(navController = navController, viewModel = loginViewModel)
-        }
-        // Define routes for EpisodeListScreen as well
     }
 }

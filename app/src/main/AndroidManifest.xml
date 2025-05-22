@@ -18,9 +18,10 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.JellyfinRyan"
-        android:banner="@drawable/ic_launcher_banner"
+        android:banner="@drawable/app_icon_your_banner"
     tools:targetApi="31">
     <activity
         android:name=".MainActivity"
