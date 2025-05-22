@@ -1,8 +1,9 @@
 plugins {
-        id("com.android.application")
-        id("org.jetbrains.kotlin.android")
-        id("dagger.hilt.android.plugin")
-        id("com.google.devtools.ksp")
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("dagger.hilt.android.plugin")
+    id("com.google.devtools.ksp")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -12,7 +13,7 @@ android {
     defaultConfig {
         applicationId = "com.example.jellyfinryan"
         minSdk = 26
-        targetSdk = 36 // Consider updating to 35 if compileSdk is 35, or update compileSdk
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
     }
@@ -34,15 +35,13 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
-        // REMOVE THE UNUSED VARIABLE:
-        // var compilerExtensionVersion = "1.5.11"
     }
 
     buildFeatures {
         compose = true
     }
-
 }
+
 dependencies {
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -58,14 +57,20 @@ dependencies {
     implementation(libs.ui.tooling)
     implementation(libs.androidx.foundation)
 
-    // TV-specific dependencies - using an older version for compatibility
+    // TV-specific dependencies
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
 
-    // Dependency Injection - using an older version for better compatibility
+    // Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    ksp(libs.androidx.room.compiler)
+    ksp(libs.hilt.compiler)
+
+    // Coil for image loading
     implementation(libs.coil.compose)
+
+    // DataStore
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore.preferences.rxjava2)
     implementation(libs.androidx.datastore.preferences.rxjava3)
@@ -75,16 +80,12 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.ui.tooling)
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson) // Keep this dependency
-    implementation(libs.androidx.media3.exoplayer) // Add Media3 Exoplayer dependency
-    implementation(libs.androidx.media3.ui) // Add Media3 UI dependency
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-}
 
-dependencies {
-    implementation(libs.androidx.material3.lint)
+    // Retrofit + Gson
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
+    // Media3 ExoPlayer
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
 }
