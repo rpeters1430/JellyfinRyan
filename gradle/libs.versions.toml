@@ -2,20 +2,20 @@
 agp = "8.10.0"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
-datastorePreferences = "1.1.6"
+datastorePreferences = "1.1.7"
 espressoCore = "3.6.1"
 hiltAndroid = "2.56.2"
 hiltAndroidCompiler = "2.56.2"
 hiltAndroidGradlePlugin = "2.56.2"
 hiltAndroidVersion = "2.56.2"
-hiltNavigationCompose = "1.0.0"
+hiltNavigationCompose = "1.2.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 kotlin = "2.1.21"
 coreKtx = "1.16.0"
-media3 = "1.3.1"
+media3 = "1.7.1"
 appcompat = "1.7.0"
-composeBom = "2025.05.00"
+composeBom = "2025.05.01"
 media3Exoplayer = "1.7.1"
 media3Ui = "1.7.1"
 retrofit = "3.0.0"
@@ -23,6 +23,7 @@ lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
 tvFoundation = "1.0.0-alpha12"
 tvMaterial = "1.1.0-alpha01"
+material3Lint = "1.4.0-alpha15"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +59,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 ui = { module = "androidx.compose.ui:ui" }
 ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-material3-lint = { group = "androidx.compose.material3", name = "material3-lint", version.ref = "material3Lint" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

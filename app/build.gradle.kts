@@ -84,6 +84,7 @@ dependencies {
 }
 
 dependencies {
+    implementation(libs.androidx.material3.lint)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
 }
