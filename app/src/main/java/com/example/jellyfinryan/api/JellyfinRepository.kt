@@ -47,10 +47,11 @@ class JellyfinRepository @Inject constructor(
             dataStoreManager.saveCredentials(
                 url = serverUrl,
                 userId = userId,
-                accessToken = accessToken
+                accessToken = accessToken,
+                username = username,
+                password = password
             )
 
-            Log.d("JellyfinRepository", "Login successful")
             Result.success(true)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "Login failed", e)
@@ -64,31 +65,31 @@ class JellyfinRepository @Inject constructor(
             serverUrl = creds.serverUrl
             userId = creds.userId
             accessToken = creds.accessToken
-
-            // Validate the token by making a simple API call
-            return validateToken()
+            return true
         }
         return false
     }
 
-    private suspend fun validateToken(): Boolean {
-        return try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
+    suspend fun refreshTokenIfNeeded(): Boolean {
+        val creds = dataStoreManager.getCredentials()
+        if (creds.username != null && creds.password != null && creds.serverUrl != null) {
+            val result = login(creds.serverUrl, creds.username, creds.password)
+            return result.isSuccess
+        }
+        return false
+    }
 
-            // Try to get user views to validate token
-            api.getUserViews(userId, accessToken)
-            Log.d("JellyfinRepository", "Token validation successful")
-            true
+    suspend fun <T> safeApiCall(apiCall: suspend () -> T): T? {
+        return try {
+            apiCall()
         } catch (e: HttpException) {
-            Log.w("JellyfinRepository", "Token validation failed: ${e.code()}")
-            // Clear invalid credentials
-            logout()
-            false
-        } catch (e: Exception) {
-            Log.w("JellyfinRepository", "Token validation error: ${e.message}")
-            logout()
-            false
+            if (e.code() == 401) {
+                Log.w("JellyfinRepository", "401 Unauthorized. Attempting to refresh token.")
+                val refreshed = refreshTokenIfNeeded()
+                if (refreshed) apiCall() else null
+            } else {
+                throw e
+            }
         }
     }
 
@@ -103,7 +104,6 @@ class JellyfinRepository @Inject constructor(
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
-
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
             .build()
@@ -116,28 +116,17 @@ class JellyfinRepository @Inject constructor(
     }
 
     fun getUserViews(): Flow<List<JellyfinItem>> = flow {
-        try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            Log.d("JellyfinRepository", "Getting user views for user: $userId")
-            val views = api.getUserViews(userId, accessToken)
-            emit(views.Items)
-        } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load user views: ${e.code()} ${e.message()}")
-            emit(emptyList())
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading user views: ${e.message}")
-            emit(emptyList())
-        }
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+        val result = safeApiCall { api.getUserViews(userId, accessToken) }
+        result?.let { emit(it.Items) } ?: emit(emptyList())
     }
 
     fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
-        try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            val items = api.getItems(
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+        val result = safeApiCall {
+            api.getItems(
                 userId = userId,
                 parentId = libraryId,
                 sortBy = "DateCreated",
@@ -146,47 +135,15 @@ class JellyfinRepository @Inject constructor(
                 includeItemTypes = null,
                 authToken = accessToken
             )
-            emit(items.Items)
-        } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load library items: ${e.code()} ${e.message()}")
-            emit(emptyList())
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading library items: ${e.message}")
-            emit(emptyList())
         }
-    }
-
-    fun getLibraryItemsFull(libraryId: String): Flow<List<JellyfinItem>> = flow {
-        try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            val response = api.getItems(
-                userId = userId,
-                parentId = libraryId,
-                sortBy = "SortName",
-                sortOrder = "Ascending",
-                limit = null,
-                includeItemTypes = null,
-                authToken = accessToken
-            )
-            emit(response.Items)
-        } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load full library items: ${e.code()} ${e.message()}")
-            emit(emptyList())
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading full library items: ${e.message}")
-            emit(emptyList())
-        }
+        result?.let { emit(it.Items) } ?: emit(emptyList())
     }
 
     fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
-        try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            Log.d("JellyfinRepository", "Getting featured items")
-            val response = api.getItems(
+        val retrofit = createRetrofit(serverUrl)
+        val api = retrofit.create(JellyfinApiService::class.java)
+        val result = safeApiCall {
+            api.getItems(
                 userId = userId,
                 parentId = null,
                 sortBy = "DateCreated",
@@ -195,64 +152,11 @@ class JellyfinRepository @Inject constructor(
                 includeItemTypes = "Movie,Series,Episode",
                 authToken = accessToken
             )
-            emit(response.Items)
-        } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load featured items: ${e.code()} ${e.message()}")
-            emit(emptyList())
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading featured items: ${e.message}")
-            emit(emptyList())
         }
+        result?.let { emit(it.Items) } ?: emit(emptyList())
     }
 
-    fun getSeasonItems(showId: String): Flow<List<JellyfinItem>> = flow {
-        try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            val response = api.getSeasons(showId, accessToken)
-            emit(response.Items)
-        } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load seasons: ${e.code()} ${e.message()}")
-            emit(emptyList())
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading seasons: ${e.message}")
-            emit(emptyList())
-        }
-    }
-
-    fun getEpisodeItems(seasonId: String): Flow<List<JellyfinItem>> = flow {
-        try {
-            val retrofit = createRetrofit(serverUrl)
-            val api = retrofit.create(JellyfinApiService::class.java)
-
-            val response = api.getEpisodes(seasonId, accessToken)
-            emit(response.Items)
-        } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load episodes: ${e.code()} ${e.message()}")
-            emit(emptyList())
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading episodes: ${e.message}")
-            emit(emptyList())
-        }
-    }
-
-    fun getItemDetails(itemId: String): Flow<JellyfinItem?> = flow {
-        emit(null)
-    }
-
-    fun getPlaybackUrl(itemId: String): String? {
-        return null
-    }
-
-    private fun buildAuthorizationHeader(): String {
-        val app = "JellyfinRyan"
-        val version = "1.0.0"
-        val device = "AndroidTV"
-        val deviceId = "android-emulator"
-
-        return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
-    }
+    // Add similar safeApiCall wrapper to other API calls if needed
 }
 
 
