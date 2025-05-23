@@ -6,29 +6,27 @@ data class JellyfinItem(
     val Id: String,
     val Name: String,
     val Type: String,
-    val PrimaryImageTag: String?, // Can be null, especially for newer servers relying on ImageTags
+    val PrimaryImageTag: String?,
     val Overview: String?,
-    val PremiereDate: String?, // Format typically "YYYY-MM-DDTHH:mm:ss.SSSSSSSZ"
+    val PremiereDate: String?,
     val CommunityRating: Float?,
     val OfficialRating: String?,
-    val RunTimeTicks: Long?, // Runtime in ticks (10,000 ticks = 1 millisecond)
-    val ImageTags: Map<String, String>?, // Preferred source for image tags like Primary, Banner, Logo
+    val RunTimeTicks: Long?,
+    val ImageTags: Map<String, String>?,
     val ParentId: String?,
-    val BackdropImageTags: List<String>? // List of tags for backdrop images
+    val BackdropImageTags: List<String>?
 ) {
     /**
      * Gets a typed image URL for the item.
-     * Common types: "Primary", "Banner", "Logo", "Thumb".
+     * Common types: "Primary", "Banner", "Logo", "Thumb", "Art", "Disc", "Menu"
      */
     fun getImageUrl(serverUrl: String, type: String = "Primary"): String? {
         val imageTag = ImageTags?.get(type)
-        // Fallback to PrimaryImageTag if type is Primary and no specific tag found in ImageTags
             ?: if (type == "Primary") PrimaryImageTag else null
 
         val url = imageTag?.let { tag ->
             "$serverUrl/Items/$Id/Images/$type?tag=$tag"
         }
-        // Log.d("JellyfinItem", "Image URL for '$Name' (type $type): $url")
         return url
     }
 
@@ -36,11 +34,8 @@ data class JellyfinItem(
      * Gets the primary image URL using the most reliable fields.
      */
     fun getPrimaryImageUrl(serverUrl: String): String? {
-        // Prefer ImageTags["Primary"], then PrimaryImageTag
         val tag = ImageTags?.get("Primary") ?: PrimaryImageTag
         val url = tag?.let { "$serverUrl/Items/$Id/Images/Primary?tag=$it" }
-        if (tag == null) Log.d("JellyfinItem", "No Primary image tag found for '$Name'")
-        Log.d("JellyfinItem", "Primary Image URL for '$Name': $url")
         return url
     }
 
@@ -55,10 +50,38 @@ data class JellyfinItem(
     }
 
     /**
+     * Gets the best horizontal image available for TV layout.
+     * Prioritizes Banner > Thumb > Backdrop > Primary
+     */
+    fun getBestHorizontalImageUrl(serverUrl: String): String? {
+        return getImageUrl(serverUrl, "Banner")
+            ?: getImageUrl(serverUrl, "Thumb")
+            ?: getBackdropImageUrl(serverUrl)
+            ?: getPrimaryImageUrl(serverUrl)
+    }
+
+    /**
+     * Gets the best image for featured/hero content.
+     * Prioritizes Backdrop > Banner > Thumb > Primary
+     */
+    fun getBestFeaturedImageUrl(serverUrl: String): String? {
+        return getBackdropImageUrl(serverUrl)
+            ?: getImageUrl(serverUrl, "Banner")
+            ?: getImageUrl(serverUrl, "Thumb")
+            ?: getPrimaryImageUrl(serverUrl)
+    }
+
+    /**
      * Converts RunTimeTicks to minutes.
+     * RunTimeTicks represents time in 100-nanosecond intervals
      */
     fun getRunTimeMinutes(): Int? {
-        return RunTimeTicks?.let { (it / (10000L * 1000L * 60L)).toInt() } // Ticks to minutes
+        return RunTimeTicks?.let { ticks ->
+            // Convert from 100-nanosecond intervals to minutes
+            // 1 second = 10,000,000 ticks
+            // 1 minute = 600,000,000 ticks
+            (ticks / 600000000L).toInt()
+        }
     }
 
     /**
@@ -66,16 +89,63 @@ data class JellyfinItem(
      */
     val year: String?
         get() = PremiereDate?.takeIf { it.length >= 4 }?.substring(0, 4)
+
+    /**
+     * Gets formatted runtime string (e.g., "1h 30m" or "45m")
+     */
+    fun getFormattedRuntime(): String? {
+        return getRunTimeMinutes()?.let { minutes ->
+            when {
+                minutes >= 60 -> {
+                    val hours = minutes / 60
+                    val remainingMinutes = minutes % 60
+                    if (remainingMinutes > 0) {
+                        "${hours}h ${remainingMinutes}m"
+                    } else {
+                        "${hours}h"
+                    }
+                }
+                else -> "${minutes}m"
+            }
+        }
+    }
+
+    /**
+     * Gets a display-friendly type name
+     */
+    fun getDisplayType(): String {
+        return when (Type) {
+            "Movie" -> "Movie"
+            "Series" -> "TV Series"
+            "Season" -> "Season"
+            "Episode" -> "Episode"
+            "MusicArtist" -> "Artist"
+            "MusicAlbum" -> "Album"
+            "Audio" -> "Song"
+            "CollectionFolder" -> "Library"
+            else -> Type
+        }
+    }
+
+    /**
+     * Checks if this item is a video type that can be played
+     */
+    fun isPlayable(): Boolean {
+        return Type in listOf("Movie", "Episode", "Video")
+    }
+
+    /**
+     * Checks if this item is a container that can be browsed
+     */
+    fun isBrowsable(): Boolean {
+        return Type in listOf("Series", "Season", "CollectionFolder", "Folder", "MusicArtist", "MusicAlbum")
+    }
 }
 
-// The JellyfinLibrary data class can remain the same for now.
-// If you also want typed images for libraries, it could be similarly updated.
 data class JellyfinLibrary(
     val Id: String,
     val Name: String,
     val CollectionType: String?,
-    // These fields might not always be directly available for a library itself.
-    // Library images are often managed by its DisplayPreferences or folder image.
     val PrimaryImageItemId: String?,
     val PrimaryImageTag: String?,
     val ImageTags: Map<String, String>?
@@ -89,16 +159,16 @@ data class JellyfinLibrary(
                 "$serverUrl/Items/$Id/Images/Primary?tag=${ImageTags["Primary"]}"
             }
             else -> {
-                // Fallback for libraries if they don't have direct PrimaryImageTag or ImageTags.
-                // This might point to a generic folder icon or require a different API endpoint.
-                // For example, for a library, you might construct a banner URL:
-                // "$serverUrl/Items/$Id/Images/Banner"
-                // Or rely on the client to show a default based on CollectionType.
-                null
+                // Fallback - try banner for libraries
+                "$serverUrl/Items/$Id/Images/Banner"
             }
         }
         Log.d("JellyfinLibrary", "Image URL for library '$Name': $imageUrl")
         return imageUrl
+    }
+
+    fun getBannerUrl(serverUrl: String): String {
+        return "$serverUrl/Items/$Id/Images/Banner"
     }
 }
 
