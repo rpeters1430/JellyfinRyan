@@ -2,7 +2,12 @@ package com.example.jellyfinryan.api
 
 import com.example.jellyfinryan.api.model.JellyfinItem
 import com.google.gson.annotations.SerializedName
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 data class AuthenticateUserByNameRequest(
     @SerializedName("Username")
@@ -36,7 +41,6 @@ interface JellyfinApiService {
         @Header("X-Emby-Token") authToken: String
     ): UserViewsResponse
 
-    // ✅ Combined and safe for both featured and library-specific items
     @GET("Users/{userId}/Items")
     suspend fun getItems(
         @Path("userId") userId: String,
@@ -51,14 +55,14 @@ interface JellyfinApiService {
     @GET("Shows/{showId}/Seasons")
     suspend fun getSeasons(
         @Path("showId") showId: String,
-        @Header("Authorization") authToken: String
-    ): ApiResponse<List<JellyfinItem>>
+        @Header("X-Emby-Token") authToken: String
+    ): ApiResponse<JellyfinItem>
 
-    @GET("Seasons/{seasonId}/Episodes")
+    @GET("Shows/{showId}/Episodes")
     suspend fun getEpisodes(
-        @Path("seasonId") seasonId: String,
-        @Header("Authorization") authToken: String
-    ): ApiResponse<List<JellyfinItem>>
+        @Path("showId") seasonId: String,
+        @Header("X-Emby-Token") authToken: String
+    ): ApiResponse<JellyfinItem>
 }
 
 

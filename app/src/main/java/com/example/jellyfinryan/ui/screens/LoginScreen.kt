@@ -1,21 +1,35 @@
 package com.example.jellyfinryan.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.*
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import androidx.tv.material3.Text
+import androidx.tv.material3.Text as TvText
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -27,6 +41,7 @@ fun LoginScreen(
     var username by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf(TextFieldValue("")) }
     var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -37,40 +52,72 @@ fun LoginScreen(
             }
         }
     }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
+            TvText(
+                text = "Jellyfin Login",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+        }
+
+        item {
             OutlinedTextField(
                 value = serverUrl,
-                onValueChange = { serverUrl = it },
-                label = { Text("Server URL") },
+                onValueChange = {
+                    serverUrl = it
+                    errorMessage = null
+                },
+                label = { TvText("Server URL") },
+                placeholder = { TvText("https://your-jellyfin-server.com") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
-                singleLine = true
+                singleLine = true,
+                isError = errorMessage != null
             )
         }
 
         item {
             OutlinedTextField(
                 value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
+                onValueChange = {
+                    username = it
+                    errorMessage = null
+                },
+                label = { TvText("Username") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
-                singleLine = true
+                singleLine = true,
+                isError = errorMessage != null
             )
         }
 
         item {
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
+                onValueChange = {
+                    password = it
+                    errorMessage = null
+                },
+                label = { TvText("Password") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 visualTransformation = PasswordVisualTransformation(),
-                singleLine = true
+                singleLine = true,
+                isError = errorMessage != null
             )
+        }
+
+        errorMessage?.let { message ->
+            item {
+                TvText(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
         }
 
         item {
@@ -78,21 +125,31 @@ fun LoginScreen(
                 onClick = {
                     coroutineScope.launch {
                         isLoading = true
-                        viewModel.login(serverUrl.text, username.text, password.text)
-                        isLoading = false
+                        errorMessage = null
+
+                        try {
+                            viewModel.login(serverUrl.text, username.text, password.text)
+                        } catch (e: Exception) {
+                            errorMessage = "Login failed: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
                     }
                 },
-                enabled = serverUrl.text.isNotBlank() && username.text.isNotBlank() && password.text.isNotBlank()
+                enabled = !isLoading &&
+                        serverUrl.text.isNotBlank() &&
+                        username.text.isNotBlank() &&
+                        password.text.isNotBlank(),
+                modifier = Modifier.padding(vertical = 16.dp)
             ) {
-                Text("Connect")
-            }
-        }
-
-        if (isLoading) {
-            item {
-                Box(modifier = Modifier.padding(16.dp)) {
-                    CircularProgressIndicator()
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
+                TvText(if (isLoading) "Connecting..." else "Connect")
             }
         }
     }
