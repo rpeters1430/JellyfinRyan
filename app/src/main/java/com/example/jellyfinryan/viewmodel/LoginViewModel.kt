@@ -40,3 +40,4 @@ class LoginViewModel @Inject constructor(
     fun getServerUrl(): String = repository.getServerUrl()
 }
 
+

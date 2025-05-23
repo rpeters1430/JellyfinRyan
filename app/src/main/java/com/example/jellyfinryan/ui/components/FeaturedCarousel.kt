@@ -2,21 +2,24 @@ package com.example.jellyfinryan.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import coil.compose.rememberAsyncImagePainter
-import com.example.jellyfinryan.data.model.LibraryView
-import coil.compose.AsyncImage
+import com.example.jellyfinryan.api.model.LibraryView
 
 @Composable
 fun FeaturedCarousel(
@@ -40,7 +43,10 @@ fun FeaturedCarouselItem(
     library: LibraryView,
     onLibraryFocus: (LibraryView) -> Unit
 ) {
-    val imageUrl = "${library.imageTag?.let { "${library.serverUrl}/Items/${library.id}/Images/Primary?tag=$it&fillWidth=1280&fillHeight=720" }}"
+    val imageUrl = library.imageTag?.let {
+        "${library.serverUrl}/Items/${library.id}/Images/Banner?tag=$it&fillWidth=1280&fillHeight=720"
+    }
+
     val painter: Painter = rememberAsyncImagePainter(imageUrl)
 
     Surface(
@@ -59,3 +65,4 @@ fun FeaturedCarouselItem(
         )
     }
 }
+

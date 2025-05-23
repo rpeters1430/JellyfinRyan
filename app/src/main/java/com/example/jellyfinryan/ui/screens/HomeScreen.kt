@@ -20,6 +20,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.model.JellyfinLibrary
+import com.example.jellyfinryan.api.model.LibraryView
+import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import com.example.jellyfinryan.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -34,7 +37,16 @@ fun HomeScreen(
     val serverUrl = viewModel.getServerUrl()
     var focusedBackground by remember { mutableStateOf<String?>(null) }
 
-    val featuredLibraries = libraries.take(5)
+    val featuredLibraries = libraries.take(5).map {
+        LibraryView(
+            id = it.Id,
+            name = it.Name,
+            collectionType = it.CollectionType ?: "Unknown",
+            backdropItemId = null,
+            imageTag = it.PrimaryImageTag,
+            serverUrl = serverUrl
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         focusedBackground?.let { url ->
@@ -52,45 +64,10 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
             item {
-                Carousel(
-                    itemCount = featuredLibraries.size,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp)
-                        .padding(bottom = 16.dp)
-                ) { index ->
-                    val item = featuredLibraries[index]
-                    val bannerUrl = "$serverUrl/Items/${item.Id}/Images/Banner"
-
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        AsyncImage(
-                            model = bannerUrl,
-                            contentDescription = item.Name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(
-                                            Color.Black.copy(alpha = 0.6f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                        )
-                        Text(
-                            text = item.Name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(16.dp)
-                        )
-                    }
-                }
+                FeaturedCarousel(
+                    libraries = featuredLibraries,
+                    onLibraryFocus = { focusedBackground = it.getPrimaryImageUrl() }
+                )
             }
 
             item {
@@ -103,7 +80,6 @@ fun HomeScreen(
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(libraries) { library ->
                         val bannerUrl = "$serverUrl/Items/${library.Id}/Images/Banner"
-                        val fallbackUrl = "$serverUrl/Items/${library.Id}/Images/Primary"
 
                         Card(
                             onClick = { onBrowseLibrary(library.Id) },
@@ -132,9 +108,7 @@ fun HomeScreen(
                 }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
-            }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
 
             items(libraries) { library ->
                 Column(
