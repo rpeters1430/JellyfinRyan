@@ -1,24 +1,11 @@
 package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,11 +15,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.Card
-import androidx.tv.material3.CardDefaults
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
+import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.LibraryView
 import com.example.jellyfinryan.ui.components.FeaturedCarousel
@@ -50,11 +33,12 @@ fun HomeScreen(
     val serverUrl = viewModel.getServerUrl()
     var focusedBackground by remember { mutableStateOf<String?>(null) }
 
+    // Convert libraries to LibraryView for the featured carousel
     val featuredLibraries = libraries.take(5).map {
         LibraryView(
             id = it.Id,
             name = it.Name,
-            collectionType = it.Type, // Use Type instead of CollectionType since JellyfinItem doesn't have CollectionType
+            collectionType = it.Type,
             backdropItemId = null,
             imageTag = it.PrimaryImageTag,
             serverUrl = serverUrl
@@ -62,58 +46,59 @@ fun HomeScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Background image with blur effect
         focusedBackground?.let { url ->
             AsyncImage(
                 model = url,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                alpha = 0.2f
+                contentScale = ContentScale.Crop,
+                alpha = 0.3f
             )
         }
 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            item {
-                FeaturedCarousel(
-                    libraries = featuredLibraries,
-                    onLibraryFocus = { focusedBackground = it.getPrimaryImageUrl() }
-                )
+            // Featured Carousel Section
+            if (featuredLibraries.isNotEmpty()) {
+                item {
+                    FeaturedCarousel(
+                        libraries = featuredLibraries,
+                        onLibraryFocus = { library ->
+                            focusedBackground = library.getBannerUrl()
+                        }
+                    )
+                }
             }
 
-            item {
-                Text(
-                    text = "Your Libraries",
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+            // Your Libraries Section
+            if (libraries.isNotEmpty()) {
+                item {
+                    Column {
+                        Text(
+                            text = "Your Libraries",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 16.dp)
+                        )
 
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(libraries) { library ->
-                        val bannerUrl = "$serverUrl/Items/${library.Id}/Images/Banner"
-
-                        Card(
-                            onClick = { onBrowseLibrary(library.Id) },
-                            modifier = Modifier
-                                .width(320.dp)
-                                .height(180.dp)
-                                .focusable()
-                                .onFocusChanged {
-                                    if (it.isFocused) {
-                                        focusedBackground = bannerUrl
-                                    }
-                                },
-                            shape = CardDefaults.shape(MaterialTheme.shapes.extraLarge),
-                            scale = CardDefaults.scale(focusedScale = 1.1f)
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 48.dp),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                AsyncImage(
-                                    model = bannerUrl,
-                                    contentDescription = library.Name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
+                            items(libraries) { library ->
+                                LibraryCard(
+                                    library = library,
+                                    serverUrl = serverUrl,
+                                    onFocus = { imageUrl ->
+                                        focusedBackground = imageUrl
+                                    },
+                                    onClick = { onBrowseLibrary(library.Id) }
                                 )
                             }
                         }
@@ -121,60 +106,194 @@ fun HomeScreen(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(32.dp)) }
-
+            // Recently Added Sections for each library
             items(libraries) { library ->
-                Column(
+                val items = libraryItems[library.Id] ?: emptyList()
+                if (items.isNotEmpty()) {
+                    LibraryItemsRow(
+                        title = "Recently Added in ${library.Name}",
+                        items = items,
+                        serverUrl = serverUrl,
+                        onItemClick = onItemClick,
+                        onItemFocus = { imageUrl ->
+                            focusedBackground = imageUrl
+                        }
+                    )
+                }
+            }
+
+            // Add some bottom padding for TV navigation
+            item {
+                Spacer(modifier = Modifier.height(48.dp))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun LibraryCard(
+    library: com.example.jellyfinryan.api.model.JellyfinItem,
+    serverUrl: String,
+    onFocus: (String?) -> Unit,
+    onClick: () -> Unit
+) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    val bannerUrl = "$serverUrl/Items/${library.Id}/Images/Banner"
+    val primaryUrl = library.getImageUrl(serverUrl)
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .width(280.dp)
+            .height(160.dp)
+            .focusable()
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+                if (focusState.isFocused) {
+                    onFocus(bannerUrl)
+                }
+            },
+        shape = CardDefaults.shape(MaterialTheme.shapes.medium),
+        scale = CardDefaults.scale(focusedScale = 1.05f),
+        colors = CardDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Try banner first, then primary image, then fallback
+            AsyncImage(
+                model = bannerUrl,
+                contentDescription = library.Name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                onError = {
+                    // If banner fails, could try primary image here
+                }
+            )
+
+            // Overlay with library name if needed
+            if (isFocused) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomStart
                 ) {
                     Text(
-                        text = "Recently Added in ${library.Name}",
+                        text = library.Name,
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        color = Color.White,
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.small)
                     )
-
-                    val items = libraryItems[library.Id] ?: emptyList()
-
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(items) { item ->
-                            var isFocused by remember { mutableStateOf(false) }
-                            Column(
-                                modifier = Modifier
-                                    .width(160.dp)
-                                    .onFocusChanged {
-                                        isFocused = it.isFocused
-                                        if (it.isFocused) {
-                                            focusedBackground = item.getImageUrl(serverUrl)
-                                        }
-                                    }
-                                    .focusable(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                item.getImageUrl(serverUrl)?.let { url ->
-                                    AsyncImage(
-                                        model = url,
-                                        contentDescription = item.Name,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .height(240.dp)
-                                            .fillMaxWidth()
-                                            .clip(MaterialTheme.shapes.large)
-                                    )
-                                }
-                                Text(
-                                    text = item.Name,
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .padding(top = 4.dp)
-                                        .fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun LibraryItemsRow(
+    title: String,
+    items: List<com.example.jellyfinryan.api.model.JellyfinItem>,
+    serverUrl: String,
+    onItemClick: (String) -> Unit,
+    onItemFocus: (String?) -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp)
+        )
+
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(items) { item ->
+                MediaItemCard(
+                    item = item,
+                    serverUrl = serverUrl,
+                    onFocus = onItemFocus,
+                    onClick = { onItemClick(item.Id) }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun MediaItemCard(
+    item: com.example.jellyfinryan.api.model.JellyfinItem,
+    serverUrl: String,
+    onFocus: (String?) -> Unit,
+    onClick: () -> Unit
+) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .width(140.dp)
+            .height(210.dp)
+            .focusable()
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+                if (focusState.isFocused) {
+                    onFocus(item.getImageUrl(serverUrl))
+                }
+            },
+        shape = CardDefaults.shape(MaterialTheme.shapes.medium),
+        scale = CardDefaults.scale(focusedScale = 1.1f)
+    ) {
+        Column {
+            // Image
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            ) {
+                item.getImageUrl(serverUrl)?.let { imageUrl ->
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.Name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } ?: Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item.Name.take(1),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // Title
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = item.Name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White,
+                    maxLines = 2,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
