@@ -1,11 +1,16 @@
 package com.example.jellyfinryan.ui.screens
 
+import androidx.compose.animation.ContentTransform // For Carousel animations
+import androidx.compose.animation.fadeIn // For Carousel animations
+import androidx.compose.animation.fadeOut // For Carousel animations
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.TabRow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,14 +18,16 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.*
+import androidx.tv.material3.* // ktlint-disable no-wildcard-imports
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
-import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import com.example.jellyfinryan.viewmodel.HomeViewModel
+import androidx.tv.material3.TabPosition // Explicit import for clarity
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -30,152 +37,163 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val libraries by viewModel.libraries.collectAsState()
-    val libraryItems by viewModel.libraryItems.collectAsState()
     val serverUrl = viewModel.getServerUrl()
     var focusedBackground by remember { mutableStateOf<String?>(null) }
 
     val selectedTabIndex by viewModel.selectedTabIndex.collectAsState()
     val carouselItems by viewModel.carouselItemsForSelectedLibrary.collectAsState()
+    val carouselState = rememberCarouselState()
+    var isTabRowFocused by remember { mutableStateOf(false) } // For PillIndicator
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Background with focused item
-        focusedBackground?.let { url ->
-            AsyncImage(
-                model = url,
-                contentDescription = "Background",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = 0.15f
-            )
-        }
-
-        // Gradient overlay for better text readability
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.4f),
-                            Color.Black.copy(alpha = 0.8f)
-                        )
-                    )
-                )
-        )
-
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Simple Top Navigation
-            if (libraries.isNotEmpty()) {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 48.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        SimpleTabButton(
-                            text = "Home",
-                            selected = selectedTabIndex == 0,
-                            onClick = { viewModel.onTabSelected(0) },
-                            onFocus = { focusedBackground = null }
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (libraries.isNotEmpty()) {
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .onFocusChanged { isTabRowFocused = it.hasFocus }, // Track TabRow focus
+                indicator = { tabPositions: List<androidx.tv.material3.TabPosition> -> // Explicit type
+                    if (selectedTabIndex < tabPositions.size) {
+                        val currentTab = tabPositions[selectedTabIndex]
+                        // Construct DpRect for PillIndicator
+                        val tabRect = DpRect(currentTab.left, 0.dp, currentTab.right, 4.dp) // Use a nominal height
+                        TabRowDefaults.PillIndicator(
+                            currentTabPosition = tabRect,
+                            doesTabRowHaveFocus = isTabRowFocused, // Pass focus state
+                            activeColor = MaterialTheme.colorScheme.primary,
+                            inactiveColor = MaterialTheme.colorScheme.surfaceVariant,
                         )
                     }
-
-                    items(libraries) { library ->
-                        val tabIndex = libraries.indexOf(library) + 1
-                        SimpleTabButton(
+                }
+            ) {
+                libraries.forEachIndexed { index, library ->
+                    Tab(
+                        selected = index == selectedTabIndex,
+                        onClick = { viewModel.onTabSelected(index) },
+                        onFocus = {
+                            val libImage = library.getImageUrl(serverUrl, type = "Banner")
+                                ?: library.getPrimaryImageUrl(serverUrl)
+                            focusedBackground = libImage
+                        },
+                        colors = TabDefaults.pillIndicatorTabColors( // Example for more distinct colors
+                            selectedContentColor = MaterialTheme.colorScheme.primary,
+                            focusedContentColor = MaterialTheme.colorScheme.inversePrimary,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text(
                             text = library.Name,
-                            selected = tabIndex == selectedTabIndex,
-                            onClick = { viewModel.onTabSelected(tabIndex) },
-                            onFocus = {
-                                val libImage = library.getImageUrl(serverUrl, type = "Banner")
-                                    ?: library.getPrimaryImageUrl(serverUrl)
-                                focusedBackground = libImage
-                            }
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                            // Color is now handled by TabDefaults.pillIndicatorTabColors or Tab's selectedContentColor
                         )
                     }
                 }
             }
+        }
 
-            // Main Content
+        Box(modifier = Modifier.weight(1f)) {
+            focusedBackground?.let { url ->
+                AsyncImage(
+                    model = url,
+                    contentDescription = "Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.2f
+                )
+            }
+
             LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 48.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = 8.dp), // Reduced top padding
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Featured Section
-                if (selectedTabIndex == 0 || carouselItems.isNotEmpty()) {
+                if (carouselItems.isNotEmpty()) {
                     item {
-                        FeaturedCarousel(
-                            items = if (selectedTabIndex == 0) {
-                                // When on Home tab, show featured items from all libraries
-                                libraryItems.values.flatten()
-                                    .filter { it.Type == "Movie" || it.Type == "Series" }
-                                    .take(10)
+                        Text(
+                            text = if (libraries.isNotEmpty() && selectedTabIndex < libraries.size) {
+                                "Featured in ${libraries[selectedTabIndex].Name}"
                             } else {
-                                carouselItems
+                                "Featured"
                             },
-                            serverUrl = serverUrl,
-                            onItemFocus = { item ->
-                                val backdrop = item.getBackdropImageUrl(serverUrl)
-                                    ?: item.getImageUrl(serverUrl, type = "Banner")
-                                    ?: item.getPrimaryImageUrl(serverUrl)
-                                focusedBackground = backdrop
-                            },
-                            onItemClick = { itemId -> onItemClick(itemId) }
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 48.dp, end = 48.dp, top = 16.dp, bottom = 8.dp)
                         )
+                        Carousel(
+                            itemCount = carouselItems.size,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            carouselState = carouselState,
+                            contentTransformStartToEnd = ContentTransform(fadeIn(), fadeOut()),
+                            contentTransformEndToStart = ContentTransform(fadeIn(), fadeOut()),
+                        ) { index -> // This lambda is the content slot for each carousel item
+                            val item = carouselItems[index]
+                            TvCarouselItem(
+                                item = item,
+                                serverUrl = serverUrl,
+                                onClick = { onItemClick(item.Id) },
+                                onFocus = {
+                                    val backdrop = item.getBackdropImageUrl(serverUrl)
+                                        ?: item.getImageUrl(serverUrl, type = "Banner")
+                                        ?: item.getPrimaryImageUrl(serverUrl)
+                                    focusedBackground = backdrop
+                                }
+                            )
+                        }
                     }
                 }
 
-                // Your Libraries Section (only show on Home tab)
-                if (selectedTabIndex == 0 && libraries.isNotEmpty()) {
+                if (libraries.isNotEmpty()) {
                     item {
-                        LibrariesSection(
-                            libraries = libraries,
-                            serverUrl = serverUrl,
-                            onFocus = { imageUrl -> focusedBackground = imageUrl },
-                            onLibraryClick = onBrowseLibrary
-                        )
-                    }
-                }
-
-                // Recently Added sections
-                if (selectedTabIndex == 0) {
-                    libraries.forEach { library ->
-                        val itemsInLibrary = libraryItems[library.Id] ?: emptyList()
-                        if (itemsInLibrary.isNotEmpty()) {
-                            item {
-                                RecentlyAddedSection(
-                                    title = "Recently Added in ${library.Name}",
-                                    items = itemsInLibrary,
-                                    serverUrl = serverUrl,
-                                    onItemClick = onItemClick,
-                                    onItemFocus = { imageUrl -> focusedBackground = imageUrl }
-                                )
-                            }
-                        }
-                    }
-                } else if (selectedTabIndex > 0) {
-                    // Show content for specific library tab
-                    val libraryIndex = selectedTabIndex - 1
-                    if (libraryIndex < libraries.size) {
-                        val selectedLibrary = libraries[libraryIndex]
-                        val itemsInLibrary = libraryItems[selectedLibrary.Id] ?: emptyList()
-
-                        if (itemsInLibrary.isNotEmpty()) {
-                            item {
-                                RecentlyAddedSection(
-                                    title = "All ${selectedLibrary.Name}",
-                                    items = itemsInLibrary,
-                                    serverUrl = serverUrl,
-                                    onItemClick = onItemClick,
-                                    onItemFocus = { imageUrl -> focusedBackground = imageUrl }
-                                )
+                        Column {
+                            Text(
+                                text = "All Libraries",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(start = 48.dp, end = 48.dp, top = 24.dp, bottom = 16.dp)
+                            )
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(libraries) { library ->
+                                    LibraryCard(
+                                        library = library,
+                                        serverUrl = serverUrl,
+                                        onFocus = { imageUrl ->
+                                            focusedBackground = imageUrl
+                                        },
+                                        onClick = { onBrowseLibrary(library.Id) }
+                                    )
+                                }
                             }
                         }
                     }
                 }
+
+                val currentLibraryItems by viewModel.libraryItems.collectAsState()
+                libraries.forEach { library ->
+                    val itemsInThisLibrary = currentLibraryItems[library.Id] ?: emptyList()
+                    if (itemsInThisLibrary.isNotEmpty()) {
+                        item {
+                            LibraryItemsRow(
+                                title = "Recently Added in ${library.Name}",
+                                items = itemsInThisLibrary,
+                                serverUrl = serverUrl,
+                                onItemClick = onItemClick,
+                                onItemFocus = { imageUrl ->
+                                    focusedBackground = imageUrl
+                                }
+                            )
+                        }
+                    }
+                }
+                item { Spacer(modifier = Modifier.height(48.dp)) }
             }
         }
     }
@@ -183,76 +201,84 @@ fun HomeScreen(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun SimpleTabButton(
-    text: String,
-    selected: Boolean,
+fun TvCarouselItem( // Item for the androidx.tv.material3.Carousel
+    item: JellyfinItem,
+    serverUrl: String,
     onClick: () -> Unit,
     onFocus: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    val imageUrl = item.getImageUrl(serverUrl, type = "Banner")
+        ?: item.getImageUrl(serverUrl, type = "Thumb")
+        ?: item.getPrimaryImageUrl(serverUrl)
 
-    Button(
-        onClick = onClick,
+    StandardCardLayout( // Using StandardCardLayout for TV-optimized card
         modifier = Modifier
+            .width(300.dp) // Adjust dimensions as needed
+            .height(170.dp) // (300 / 16 * 9 for 16:9)
             .onFocusChanged {
                 isFocused = it.isFocused
-                if (it.isFocused) {
+                if (isFocused) {
                     onFocus()
                 }
             },
-        colors = ButtonDefaults.colors(
-            containerColor = when {
-                selected -> MaterialTheme.colorScheme.primary
-                isFocused -> MaterialTheme.colorScheme.primaryContainer
-                else -> Color.White.copy(alpha = 0.1f)
-            },
-            contentColor = when {
-                selected -> MaterialTheme.colorScheme.onPrimary
-                isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-                else -> Color.White.copy(alpha = 0.8f)
+        imageCard = { interactionSource -> // Lambda provides InteractionSource
+            Card(
+                onClick = onClick,
+                interactionSource = interactionSource, // Pass InteractionSource
+                modifier = Modifier.fillMaxSize(), // Card fills the imageCard slot
+                shape = CardDefaults.shape(MaterialTheme.shapes.medium)
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (imageUrl != null) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = item.Name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) { Text(item.Name.take(1)) }
+                    }
+                    Box( // Scrim for text legibility
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                    startY = 100f // Start scrim lower
+                                )
+                            )
+                    )
+                }
             }
-        )
-    ) {
-        Text(
-            text = text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun LibrariesSection(
-    libraries: List<JellyfinItem>,
-    serverUrl: String,
-    onFocus: (String?) -> Unit,
-    onLibraryClick: (String) -> Unit
-) {
-    Column {
-        Text(
-            text = "Your Libraries",
-            style = MaterialTheme.typography.headlineLarge,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 48.dp, bottom = 24.dp)
-        )
-
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(libraries) { library ->
-                LibraryCard(
-                    library = library,
-                    serverUrl = serverUrl,
-                    onFocus = onFocus,
-                    onClick = { onLibraryClick(library.Id) }
+        },
+        title = { // This is the title slot for StandardCardLayout
+            Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp, top = 4.dp)) {
+                Text(
+                    text = item.Name,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White // Ensure text is visible on scrim
                 )
+                item.year?.let { yearValue ->
+                    Text(
+                        text = "$yearValue" + (item.Type?.let { " - $it" } ?: ""),
+                        style = MaterialTheme.typography.bodySmall, // Changed from bodyExtraSmall
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
             }
         }
-    }
+    )
 }
+
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -269,8 +295,8 @@ fun LibraryCard(
     Card(
         onClick = onClick,
         modifier = Modifier
-            .width(300.dp)
-            .height(170.dp) // 16:9 aspect ratio
+            .width(280.dp)
+            .height(160.dp)
             .focusable()
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
@@ -281,8 +307,8 @@ fun LibraryCard(
         shape = CardDefaults.shape(MaterialTheme.shapes.medium),
         scale = CardDefaults.scale(focusedScale = 1.05f),
         colors = CardDefaults.colors(
-            containerColor = Color.Black.copy(alpha = 0.3f),
-            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -295,41 +321,21 @@ fun LibraryCard(
                 )
             } else {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Gray.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = library.Name.take(1),
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = Color.White
-                    )
-                }
+                ) { Text(library.Name.take(1), style = MaterialTheme.typography.headlineMedium) }
             }
-
-            // Gradient overlay for text
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
-                            ),
-                            startY = 50f
-                        )
-                    )
-                    .padding(16.dp),
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
+                    .padding(12.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
                 Text(
                     text = library.Name,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
                 )
             }
         }
@@ -337,28 +343,27 @@ fun LibraryCard(
 }
 
 @Composable
-fun RecentlyAddedSection(
+fun LibraryItemsRow(
     title: String,
     items: List<JellyfinItem>,
     serverUrl: String,
     onItemClick: (String) -> Unit,
     onItemFocus: (String?) -> Unit
 ) {
-    Column {
+    Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 48.dp, bottom = 16.dp)
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 8.dp)
         )
-
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 48.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(items) { item ->
-                HorizontalMediaCard(
+                MediaItemCard(
                     item = item,
                     serverUrl = serverUrl,
                     onFocus = onItemFocus,
@@ -371,25 +376,23 @@ fun RecentlyAddedSection(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun HorizontalMediaCard(
+fun MediaItemCard(
     item: JellyfinItem,
     serverUrl: String,
     onFocus: (String?) -> Unit,
     onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
-
-    // Try to get horizontal images first
-    val horizontalImageUrl = item.getImageUrl(serverUrl, type = "Banner")
-        ?: item.getImageUrl(serverUrl, type = "Thumb")
-        ?: item.getBackdropImageUrl(serverUrl)
+    // Use "Thumb" for 16:9, then "Banner", then "Primary" as fallback for horizontal aspect
+    val horizontalImageUrl = item.getImageUrl(serverUrl, type = "Thumb")
+        ?: item.getImageUrl(serverUrl, type = "Banner")
         ?: item.getPrimaryImageUrl(serverUrl)
 
     Card(
         onClick = onClick,
         modifier = Modifier
-            .width(280.dp)
-            .height(158.dp) // 16:9 aspect ratio
+            .width(240.dp)
+            .height(135.dp) // 16:9 aspect ratio
             .focusable()
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
@@ -398,10 +401,10 @@ fun HorizontalMediaCard(
                 }
             },
         shape = CardDefaults.shape(MaterialTheme.shapes.medium),
-        scale = CardDefaults.scale(focusedScale = 1.08f),
+        scale = CardDefaults.scale(focusedScale = 1.05f), // Adjusted focus scale
         colors = CardDefaults.colors(
-            containerColor = Color.Black.copy(alpha = 0.3f),
-            focusedContainerColor = Color.White.copy(alpha = 0.1f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            focusedContainerColor = MaterialTheme.colorScheme.secondaryContainer // Different focus color
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -414,61 +417,24 @@ fun HorizontalMediaCard(
                 )
             } else {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Gray.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = item.Name.take(1),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White
-                    )
-                }
+                ) { Text(item.Name.take(1), style = MaterialTheme.typography.headlineMedium) }
             }
-
-            // Text overlay
-            Box(
+            Box( // Text overlay
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.8f)
-                            ),
-                            startY = 80f
-                        )
-                    )
-                    .padding(12.dp),
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
+                    .padding(8.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
-                Column {
-                    Text(
-                        text = item.Name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // Show year and type if available
-                    val subtitle = buildString {
-                        item.year?.let { append(it) }
-                        if (item.year != null && item.Type.isNotEmpty()) append(" • ")
-                        if (item.Type.isNotEmpty()) append(item.Type)
-                    }
-
-                    if (subtitle.isNotEmpty()) {
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
+                Text(
+                    text = item.Name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
