@@ -3,10 +3,11 @@ package com.example.jellyfinryan.api
 import android.content.Context
 import android.util.Log
 // Import your UnsafeKtorClient
-import com.example.jellyfinryan.utils.UnsafeKtorClient //
+import com.example.jellyfinryan.utils.UnsafeKtorClient
 // Import UnsafeOkHttpClient for the unsafeHttpClient property
-import com.example.jellyfinryan.utils.UnsafeOkHttpClient //
+import com.example.jellyfinryan.utils.UnsafeOkHttpClient
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.ktor.client.HttpClient // Explicit import for HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient // For the unsafeHttpClient property
@@ -44,8 +45,8 @@ class EnhancedJellyfinSdkService @Inject constructor(
 ) {
 
     private var jellyfin: Jellyfin? = null
-    private var apiClient: ApiClient? = null // This will be configured with UnsafeKtorClient
-    private var unsafeHttpClient: OkHttpClient? = null // Your existing OkHttpClient for direct calls
+    private var apiClient: ApiClient? = null
+    private var unsafeHttpClient: OkHttpClient? = null
     private var serverUrl: String = ""
     private var accessToken: String = ""
     private var isInitialized = false
@@ -61,7 +62,6 @@ class EnhancedJellyfinSdkService @Inject constructor(
                 this@EnhancedJellyfinSdkService.serverUrl = serverUrl.removeSuffix("/")
                 this@EnhancedJellyfinSdkService.accessToken = accessToken
 
-                // Configure unsafeHttpClient (OkHttp) for direct calls if needed (e.g., makeHttpRequest)
                 val loggingInterceptor = HttpLoggingInterceptor().apply {
                     level = HttpLoggingInterceptor.Level.BASIC
                 }
@@ -82,34 +82,25 @@ class EnhancedJellyfinSdkService @Inject constructor(
                     }
                     .build()
 
-                // Create the unsafe Ktor HttpClient that the Jellyfin SDK will use
                 val unsafeKtorHttpClientForSdk = UnsafeKtorClient.createUnsafeKtorClient()
-
-                // Initialize Jellyfin SDK core, providing the custom Ktor client via options
                 jellyfin = Jellyfin(
                     JellyfinOptions.Builder().apply {
                         clientInfo = ClientInfo(
                             name = "JellyfinRyan",
                             version = "1.0"
                         )
-                        context = this@EnhancedJellyfinSdkService.context
-                        // *** THIS IS THE KEY CHANGE FOR SDK 1.6.8 ***
-                        customKtorClient = unsafeKtorHttpClientForSdk
+                        context = this@EnhancedJellyfinSdkService.context // This context is Any? in SDK 1.6.8
+                        // Call the method to set the custom Ktor client
+                        customKtorClient(unsafeKtorHttpClientForSdk)
                     }.build()
                 )
-
-                // Create the ApiClient. It will now use the customKtorClient provided in options.
-                // The `client` parameter is REMOVED from this call.
                 try {
                     apiClient = jellyfin!!.createApi(
                         baseUrl = this@EnhancedJellyfinSdkService.serverUrl,
                         accessToken = accessToken
-                        // NO client = ... parameter here for SDK 1.6.8
+                        // NO client = ... parameter here
                     )
                     Log.d("EnhancedJellyfinSdk", "SDK ApiClient created. It should use the custom Ktor client from JellyfinOptions.")
-                } catch (e: Exception) {
-                    Log.e("EnhancedJellyfinSdk", "Failed to create SDK ApiClient", e)
-                    // apiClient will remain null if this fails
                 }
 
                 isInitialized = apiClient != null
@@ -127,22 +118,11 @@ class EnhancedJellyfinSdkService @Inject constructor(
             }
         }
     }
-    /**
-     * Check if the enhanced SDK is available
-     * For SDK functions, apiClient must be non-null.
-     * For direct makeHttpRequest, unsafeHttpClient must be non-null.
-     */
-    fun isAvailable(): Boolean = isInitialized // Relies on apiClient being successfully initialized
 
-    /**
-     * Get server URL
-     */
+    fun isAvailable(): Boolean = isInitialized
+
     fun getServerUrl(): String = serverUrl
 
-    /**
-     * Make a direct HTTP request using the separately configured unsafe OkHttpClient.
-     * This is a fallback or for endpoints not covered by the SDK's ApiClient.
-     */
     private suspend fun makeHttpRequest(endpoint: String): String? {
         if (unsafeHttpClient == null) {
             Log.e("EnhancedJellyfinSdk", "unsafeHttpClient is not initialized. Cannot make HTTP request.")
@@ -152,12 +132,7 @@ class EnhancedJellyfinSdkService @Inject constructor(
             try {
                 val client = unsafeHttpClient!!
                 val url = "${serverUrl}${endpoint}"
-
-                val request = Request.Builder()
-                    .url(url)
-                    // Headers are already added by the interceptor in unsafeHttpClient
-                    .build()
-
+                val request = Request.Builder().url(url).build() // Headers added by interceptor
                 val response = client.newCall(request).execute()
                 if (response.isSuccessful) {
                     response.body?.string()
@@ -172,9 +147,6 @@ class EnhancedJellyfinSdkService @Inject constructor(
         }
     }
 
-    /**
-     * Test connectivity (preferably using an SDK call if apiClient is initialized)
-     */
     suspend fun testConnectivity(): Boolean {
         if (!isInitialized || apiClient == null) {
             Log.w("EnhancedJellyfinSdk", "SDK not fully initialized for testConnectivity via SDK. Trying direct HTTP.")
@@ -183,15 +155,17 @@ class EnhancedJellyfinSdkService @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 Log.d("EnhancedJellyfinSdk", "Testing connectivity via SDK apiClient to $serverUrl...")
-                // Try a lightweight SDK call, e.g., get public system info if available or a similar benign call
-                // For now, using getUserViews as a test, ensure userId is valid or use a public endpoint
-                // As a simple test, just check if apiClient is not null after initialization.
-                // A more robust test would be a lightweight API call.
-                val systemInfo = apiClient?.userViewsApi?.getUserViews(userId = UUID.randomUUID()) // Using a random UUID as placeholder for a generic check
-                val success = systemInfo != null // Or check response.isSuccess if the call returns a Response object
+                // Use a more reliable, lightweight public API call if possible, or just check initialization.
+                // For an actual API call, ensure the 'userId' used is valid for the test context.
+                // Here, we'll assume a successful API client initialization is a good enough proxy for this test.
+                // A System Ping or similar lightweight public endpoint call from the SDK would be better.
+                // apiClient?.systemApi?.getPingSystem() for example, if it exists and is public.
+                // For now, let's simulate a check:
+                val publicSystemInfo = apiClient?.userViewsApi?.getUserViews(UUID.randomUUID()) // Example, might need a real user or public endpoint
+                val success = publicSystemInfo != null // Simplified check
 
                 if (success) {
-                    Log.d("EnhancedJellyfinSdk", "Connectivity test via SDK apiClient successful.")
+                    Log.d("EnhancedJellyfinSdk", "Connectivity test via SDK apiClient seems successful.")
                 } else {
                     Log.w("EnhancedJellyfinSdk", "Connectivity test via SDK apiClient failed or returned no data.")
                 }
@@ -203,9 +177,6 @@ class EnhancedJellyfinSdkService @Inject constructor(
         }
     }
 
-    /**
-     * Parse UUID string to proper UUID format. Handles strings with or without hyphens.
-     */
     private fun parseUuid(uuidString: String): java.util.UUID {
         val cleanUuid = uuidString.replace("-", "")
         if (cleanUuid.length == 32) {
@@ -214,16 +185,12 @@ class EnhancedJellyfinSdkService @Inject constructor(
                 java.util.UUID.fromString(formattedUuid)
             } catch (e: IllegalArgumentException) {
                 Log.w("EnhancedJellyfinSdk", "Could not parse '$uuidString' as a 32-char UUID, trying direct parse.")
-                java.util.UUID.fromString(uuidString) // Fallback for already formatted or other UUID forms
+                java.util.UUID.fromString(uuidString)
             }
         }
-        // If not 32 chars after cleaning, try to parse directly, might throw error which is fine
         return java.util.UUID.fromString(uuidString)
     }
 
-    /**
-     * Get image URL using the SDK's apiClient.
-     */
     fun getImageUrl(
         itemId: String,
         imageType: ImageType = ImageType.PRIMARY,
@@ -233,7 +200,7 @@ class EnhancedJellyfinSdkService @Inject constructor(
     ): String? {
         if (!isInitialized || apiClient == null) {
             Log.w("EnhancedJellyfinSdk", "SDK not initialized or apiClient is null. Cannot get image URL.")
-            return null // Or fallback to manual construction if absolutely necessary
+            return null
         }
         return try {
             apiClient!!.imageApi.getItemImageUrl(
@@ -249,7 +216,6 @@ class EnhancedJellyfinSdkService @Inject constructor(
         }
     }
 
-    // SDK-dependent methods using apiClient
     suspend fun getRecentItems(userId: String, limit: Int = 20): List<BaseItemDto> {
         if (!isInitialized || apiClient == null) {
             Log.w("EnhancedJellyfinSdk", "SDK not initialized or apiClient is null. Cannot get recent items.")
@@ -321,8 +287,8 @@ class EnhancedJellyfinSdkService @Inject constructor(
                 Log.d("EnhancedJellyfinSdk", "Attempting to get user views with SDK apiClient for user: $userId")
                 apiClient!!.userViewsApi.getUserViews(
                     userId = parseUuid(userId),
-                    includeExternalContent = false, // Optional: set as needed
-                    includeHidden = false         // Optional: set as needed
+                    includeExternalContent = false,
+                    includeHidden = false
                 )?.content?.items ?: emptyList<BaseItemDto>().also {
                     Log.d("EnhancedJellyfinSdk", "getUserViews returned null or empty items from SDK.")
                 }
@@ -342,7 +308,7 @@ class EnhancedJellyfinSdkService @Inject constructor(
             try {
                 apiClient!!.itemsApi.getItems(
                     userId = parseUuid(userId),
-                    parentId = parseUuid(parentId), // Assuming parentId is a library ID
+                    parentId = parseUuid(parentId),
                     limit = limit,
                     sortBy = listOf(ItemSortBy.SORT_NAME),
                     sortOrder = listOf(SortOrder.ASCENDING),
@@ -356,7 +322,7 @@ class EnhancedJellyfinSdkService @Inject constructor(
                         ItemFields.PARENT_ID
                     ),
                     enableImages = true,
-                    recursive = false // Typically false for items directly under a library view
+                    recursive = false
                 )?.content?.items ?: emptyList()
             } catch (e: Exception) {
                 Log.e("EnhancedJellyfinSdk", "Failed to get library items using SDK apiClient", e)
