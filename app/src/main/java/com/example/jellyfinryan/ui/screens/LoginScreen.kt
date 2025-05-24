@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,16 +20,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -37,9 +38,9 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit
 ) {
-    var serverUrl by remember { mutableStateOf(TextFieldValue("")) }
-    var username by remember { mutableStateOf(TextFieldValue("")) }
-    var password by remember { mutableStateOf(TextFieldValue("")) }
+    var serverUrl by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -69,44 +70,43 @@ fun LoginScreen(
         item {
             OutlinedTextField(
                 value = serverUrl,
-                onValueChange = { value ->
-                    serverUrl = value
+                onValueChange = { newValue ->
+                    serverUrl = newValue
                     errorMessage = null
                 },
-                label = { Text("Server Url") },
+                label = { Text("Server URL") },
                 placeholder = { Text("https://your-jellyfin-server.com") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 singleLine = true,
-                isError = errorMessage != null
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
             )
         }
 
         item {
             OutlinedTextField(
                 value = username,
-                onValueChange = { value ->
-                    username = value
+                onValueChange = { newValue ->
+                    username = newValue
                     errorMessage = null
                 },
                 label = { Text("Username") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
-                singleLine = true,
-                isError = errorMessage != null
+                singleLine = true
             )
         }
 
         item {
             OutlinedTextField(
                 value = password,
-                onValueChange = { value ->
-                    password = value
+                onValueChange = { newValue ->
+                    password = newValue
                     errorMessage = null
                 },
                 label = { Text("Password") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
-                isError = errorMessage != null
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
         }
 
@@ -128,7 +128,7 @@ fun LoginScreen(
                         errorMessage = null
 
                         try {
-                            viewModel.login(serverUrl.text, username.text, password.text)
+                            viewModel.login(serverUrl, username, password)
                         } catch (e: Exception) {
                             errorMessage = "Login failed: ${e.message}"
                         } finally {
@@ -137,9 +137,9 @@ fun LoginScreen(
                     }
                 },
                 enabled = !isLoading &&
-                        serverUrl.text.isNotBlank() &&
-                        username.text.isNotBlank() &&
-                        password.text.isNotBlank(),
+                        serverUrl.isNotBlank() &&
+                        username.isNotBlank() &&
+                        password.isNotBlank(),
                 modifier = Modifier.padding(vertical = 16.dp)
             ) {
                 if (isLoading) {
