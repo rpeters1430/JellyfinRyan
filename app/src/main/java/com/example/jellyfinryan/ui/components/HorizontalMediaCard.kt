@@ -65,118 +65,148 @@ fun HorizontalMediaCard(
                 }
             },
         shape = CardDefaults.shape(RoundedCornerShape(12.dp))
-    ) {        Box {
-        // Background image - prefer horizontal images for better aspect ratio
-        // Use getHorizontalImageUrl with null sdkRepository (falls back to manual URL construction)
-        val imageUrl = item.getHorizontalImageUrl(serverUrl, sdkRepository)
-        Log.d("HorizontalMediaCard", "Item: ${item.Name}, Type: ${item.Type}, ImageURL: $imageUrl")
+    ) {
+        Box {
+            // Enhanced debug logging for image URL generation
+            val imageUrl = item.getHorizontalImageUrl(serverUrl, sdkRepository)
+            Log.d("HorizontalMediaCard", "=== IMAGE DEBUG INFO ===")
+            Log.d("HorizontalMediaCard", "Item: ${item.Name}")
+            Log.d("HorizontalMediaCard", "Type: ${item.Type}")
+            Log.d("HorizontalMediaCard", "PrimaryImageTag: ${item.PrimaryImageTag}")
+            Log.d("HorizontalMediaCard", "BackdropImageTags: ${item.BackdropImageTags}")
+            Log.d("HorizontalMediaCard", "ImageTags: ${item.ImageTags}")
+            Log.d("HorizontalMediaCard", "Generated Image URL: $imageUrl")
+            Log.d("HorizontalMediaCard", "Server URL: $serverUrl")
+            Log.d("HorizontalMediaCard", "========================")
 
-        imageUrl?.let { url ->
-            AsyncImage(
-                model = url,
-                contentDescription = item.Name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } ?: Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary
+            imageUrl?.let { url ->
+                Log.d("HorizontalMediaCard", "🖼️ Attempting to load image: $url")
+                AsyncImage(
+                    model = url,
+                    contentDescription = item.Name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onSuccess = {
+                        Log.d("HorizontalMediaCard", "✅ Image loaded successfully: $url")
+                    },
+                    onError = { error ->
+                        Log.e(
+                            "HorizontalMediaCard",
+                            "❌ Image load failed: $url",
+                            error.result.throwable
                         )
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = item.Name.take(1),
-                style = MaterialTheme.typography.displayMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // Gradient overlay for text readability
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.6f)
+                        Log.e(
+                            "HorizontalMediaCard",
+                            "Error details: ${error.result.throwable?.message}"
+                        )
+                    },
+                    onLoading = {
+                        Log.d("HorizontalMediaCard", "⏳ Image loading: $url")
+                    }
+                )
+            } ?: run {
+                Log.w("HorizontalMediaCard", "❌ No image URL generated for item: ${item.Name}")
+                // Fallback UI
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            )
                         ),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
-                    )
-                )
-        )
-
-        // Content overlay
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            // Title
-            Text(
-                text = item.Name,
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            // Metadata row
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = item.Type,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontWeight = FontWeight.Medium
-                )
-
-                // Show year if available
-                item.PremiereDate?.let { date ->
-                    val year = date.substring(0, 4)
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = " • $year",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                }
-
-                // Show rating if available
-                item.CommunityRating?.let { rating ->
-                    Text(
-                        text = " • ⭐ ${String.format("%.1f", rating)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f)
+                        text = item.Name.take(1),
+                        style = MaterialTheme.typography.displayMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-        }
 
-        // Focus indicator
-        if (isFocused) {
+            // Gradient overlay for text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Color.White.copy(alpha = 0.1f),
-                        RoundedCornerShape(12.dp)
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.6f)
+                            ),
+                            startY = 0f,
+                            endY = Float.POSITIVE_INFINITY
+                        )
                     )
             )
+
+            // Content overlay
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                // Title
+                Text(
+                    text = item.Name,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+
+                // Metadata row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.Type,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    // Show year if available
+                    item.PremiereDate?.let { date ->
+                        val year = date.substring(0, 4)
+                        Text(
+                            text = " • $year",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+
+                    // Show rating if available
+                    item.CommunityRating?.let { rating ->
+                        Text(
+                            text = " • ⭐ ${String.format("%.1f", rating)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+
+            // Focus indicator
+            if (isFocused) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Color.White.copy(alpha = 0.1f),
+                            RoundedCornerShape(12.dp)
+                        )
+                )
+            }
         }
-    }
     }
 }

@@ -129,6 +129,13 @@ fun HomeScreen(
                     ) {
                         Text("🧪 Test SSL Bypass")
                     }
+
+                    Button(
+                        onClick = { viewModel.testImageUrls() },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text("🖼️ Test Image URLs")
+                    }
                 }
             }
             return
