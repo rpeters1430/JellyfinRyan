@@ -1,6 +1,7 @@
 package com.example.jellyfinryan
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("MainActivity", "Starting JellyfinRyan app")
 
         setContent {
             JellyfinTVTheme {
@@ -37,7 +39,9 @@ class MainActivity : ComponentActivity() {
                 var isLoggedIn by remember { mutableStateOf(false) }
 
                 LaunchedEffect(Unit) {
+                    Log.d("MainActivity", "Checking auto-login status")
                     isLoggedIn = jellyfinRepository.tryAutoLogin()
+                    Log.d("MainActivity", "Auto-login result: $isLoggedIn")
                     isLoading = false
                 }
 
@@ -48,9 +52,11 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 } else {
+                    val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
+                    Log.d("MainActivity", "Navigating to: $startDestination")
                     JellyfinNavHost(
                         navController = navController,
-                        startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
+                        startDestination = startDestination
                     )
                 }
             }

@@ -1,5 +1,6 @@
 package com.example.jellyfinryan.api
 
+import android.content.Context
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.JellyfinOptions
 import org.jellyfin.sdk.api.client.ApiClient
@@ -7,11 +8,13 @@ import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.api.client.extensions.userViewsApi
+import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.SortOrder
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,18 +23,22 @@ import javax.inject.Singleton
  * This is the proper way to connect to Jellyfin servers and get images
  */
 @Singleton
-class JellyfinSdkService @Inject constructor() {
+class JellyfinSdkService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     
     private var jellyfin: Jellyfin? = null
     private var apiClient: ApiClient? = null
-    
-    /**
+      /**
      * Initialize the Jellyfin SDK with server connection
-     */
-    suspend fun initialize(serverUrl: String, apiKey: String, userId: String) {
+     */    suspend fun initialize(serverUrl: String, apiKey: String, userId: String) {
         jellyfin = Jellyfin(
-            JellyfinOptions.Builder()
-                .build()
+            JellyfinOptions.Builder().apply {
+                clientInfo = ClientInfo(
+                    name = "JellyfinRyan",
+                    version = "1.0"
+                )
+            }.build()
         )
         
         apiClient = jellyfin!!.createApi(

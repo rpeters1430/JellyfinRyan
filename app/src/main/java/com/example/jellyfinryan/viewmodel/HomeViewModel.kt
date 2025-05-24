@@ -34,13 +34,13 @@ class HomeViewModel @Inject constructor(
     
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-    
-    init {
+      init {
         fetchLibraries()
         loadFeatured()
         initializeSdk()
     }
-      /**
+    
+    /**
      * Initialize the SDK for proper image URL generation
      */
     private fun initializeSdk() {
@@ -63,15 +63,14 @@ class HomeViewModel @Inject constructor(
                 // SDK initialization failed, but app should still work with fallback
             }
         }
-    }
-      /**
+    }    /**
      * Get the SDK repository for image URL generation
      */
     fun getSdkRepository(): JellyfinSdkRepository = sdkRepository
-      private fun fetchLibraries() {
+    
+    private fun fetchLibraries() {
         viewModelScope.launch {
-            try {
-                sdkRepository.getUserViews().collect { views ->
+            try {                sdkRepository.getUserViews().collect { views ->
                     _libraries.value = views
                     _errorMessage.value = null
 
@@ -93,8 +92,7 @@ class HomeViewModel @Inject constructor(
         }
     }    private fun fetchItemsForLibrary(libraryId: String) {
         viewModelScope.launch {
-            try {
-                sdkRepository.getLibraryItems(libraryId).collect { items ->
+            try {                sdkRepository.getLibraryItems(libraryId).collect { items ->
                     _libraryItems.update { current ->
                         current + (libraryId to items)
                     }
@@ -106,18 +104,18 @@ class HomeViewModel @Inject constructor(
         }
     }    private fun fetchRecentlyAddedForLibrary(libraryId: String) {
         viewModelScope.launch {
-            try {
-                sdkRepository.getRecentlyAddedForLibrary(libraryId).collect { items ->
+            try {                sdkRepository.getRecentlyAddedForLibrary(libraryId).collect { items ->
                     _recentlyAddedItems.update { current ->
                         current + (libraryId to items)
                     }
-                }
-            } catch (e: Exception) {
+                }            } catch (e: Exception) {
                 // Log error but don't break the UI
                 _errorMessage.value = "Failed to load recently added items: ${e.message}"
             }
         }
-    }    private fun loadFeatured() {
+    }
+    
+    private fun loadFeatured() {
         viewModelScope.launch {
             try {
                 // Use the sdkRepository's getFeaturedItems method for better content
