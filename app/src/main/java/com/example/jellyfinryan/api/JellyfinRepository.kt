@@ -250,6 +250,36 @@ class JellyfinRepository @Inject constructor(
         val deviceId = "android-emulator"
 
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
+    }    fun getRecentlyAddedForLibrary(libraryId: String): Flow<List<JellyfinItem>> = flow {
+        try {
+            val retrofit = createRetrofit(serverUrl)
+            val api = retrofit.create(JellyfinApiService::class.java)
+
+            Log.d("JellyfinRepository", "Getting recently added items for library: $libraryId")
+            val response = api.getItemsWithImages(
+                userId = userId,
+                parentId = libraryId,
+                sortBy = "DateCreated",
+                sortOrder = "Descending",
+                limit = 20, // Get more items for recently added
+                includeItemTypes = null,
+                authToken = accessToken
+            )
+            
+            Log.d("JellyfinRepository", "Recently added response: ${response.Items.size} items")
+            response.Items.forEachIndexed { index, item ->
+                val imageUrl = item.getHorizontalImageUrl(serverUrl)
+                Log.d("JellyfinRepository", "Item $index (${item.Name}): Type=${item.Type}, PrimaryImageTag=${item.PrimaryImageTag}, BackdropImageTags=${item.BackdropImageTags}, ImageUrl=$imageUrl")
+            }
+            
+            emit(response.Items)
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "Failed to load recently added for library $libraryId: ${e.code()} ${e.message()}")
+            emit(emptyList())
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Unexpected error loading recently added for library $libraryId: ${e.message}")
+            emit(emptyList())
+        }
     }
 }
 

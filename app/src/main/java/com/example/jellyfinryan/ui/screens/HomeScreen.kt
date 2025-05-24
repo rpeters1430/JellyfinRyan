@@ -24,6 +24,8 @@ import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.ui.components.FeaturedCarousel
+import com.example.jellyfinryan.ui.components.MyLibrariesSection
+import com.example.jellyfinryan.ui.components.RecentlyAddedSection
 import com.example.jellyfinryan.ui.components.LibraryRow
 import com.example.jellyfinryan.viewmodel.HomeViewModel
 
@@ -36,7 +38,10 @@ fun HomeScreen(
 ) {
     val libraries by viewModel.libraries.collectAsState()
     val libraryItems by viewModel.libraryItems.collectAsState()
+    val recentlyAddedItems by viewModel.recentlyAddedItems.collectAsState()
     val featured by viewModel.featured.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     val serverUrl = viewModel.getServerUrl()
     
     var backgroundImageUrl by remember { mutableStateOf<String?>(null) }
@@ -64,77 +69,118 @@ fun HomeScreen(
                                 Color.Black.copy(alpha = 0.8f)
                             )
                         )
-                    )
-            )
+                    )            )
         }
-          // Main content
+        
+        // Loading state
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Loading your media...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White
+                    )
+                }
+            }
+            return
+        }
+        
+        // Error state
+        errorMessage?.let { error ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(48.dp)                ) {
+                    Text(
+                        text = "⚠️ Connection Error",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White
+                    )
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { viewModel.clearError() }
+                    ) {
+                        Text("Retry")
+                    }
+                }
+            }
+            return
+        }
+
+        // Main content
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(32.dp), // Increased spacing for TV
             contentPadding = PaddingValues(vertical = 40.dp) // Increased padding for TV
         ) {
-            // Featured Carousel Section - Enhanced for TV
+            // Featured Carousel Section - Enhanced for TV with Anatomy feature
             if (featured.isNotEmpty()) {
                 item {
-                    Column {
-                        Text(
-                            text = "Featured Content",
-                            style = MaterialTheme.typography.displayMedium, // Larger for TV
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 20.dp)
-                        )
-                        
-                        FeaturedCarousel(
-                            featuredItems = featured,
-                            serverUrl = serverUrl,
-                            onItemClick = onItemClick,
-                            onItemFocus = { item ->
-                                backgroundImageUrl = item.getImageUrl(serverUrl)
-                            }
-                        )
-                    }
+                    FeaturedCarousel(
+                        featuredItems = featured,
+                        serverUrl = serverUrl,
+                        onItemClick = onItemClick,
+                        onItemFocus = { item ->
+                            backgroundImageUrl = item.getImageUrl(serverUrl)
+                        },
+                        modifier = Modifier.height(600.dp) // Set height for carousel
+                    )
                 }
             }
             
-            // Libraries Section - Enhanced for TV
+            // My Libraries Section - Horizontal cards
             if (libraries.isNotEmpty()) {
                 item {
-                    Column {
-                        Text(
-                            text = "Your Media Libraries",
-                            style = MaterialTheme.typography.displaySmall, // Larger for TV
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 48.dp, vertical = 20.dp)
-                        )
-                        
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(24.dp), // Increased spacing for TV
-                            contentPadding = PaddingValues(horizontal = 48.dp)
-                        ) {
-                            items(libraries) { library ->
-                                LibraryCard(
-                                    library = library,
-                                    serverUrl = serverUrl,
-                                    onLibraryClick = { onBrowseLibrary(library.Id) },
-                                    onLibraryFocus = { imageUrl ->
-                                        backgroundImageUrl = imageUrl
-                                    }
-                                )
-                            }
+                    MyLibrariesSection(
+                        libraries = libraries,
+                        serverUrl = serverUrl,
+                        onLibraryClick = onBrowseLibrary,
+                        onLibraryFocus = { library ->
+                            backgroundImageUrl = library.getImageUrl(serverUrl)
                         }
-                    }
+                    )
                 }
             }
             
-            // Library Content Rows - Enhanced for TV
+            // Recently Added Sections for each library
             items(libraries) { library ->
-                val items = libraryItems[library.Id] ?: emptyList()
-                if (items.isNotEmpty()) {
-                    LibraryRow(
+                val recentItems = recentlyAddedItems[library.Id] ?: emptyList()
+                if (recentItems.isNotEmpty()) {
+                    RecentlyAddedSection(
                         title = "Recently Added in ${library.Name}",
-                        items = items.take(15), // Show more items for TV
+                        items = recentItems.take(15), // Show up to 15 items
+                        serverUrl = serverUrl,
+                        onItemClick = onItemClick,
+                        onItemFocus = { item ->
+                            backgroundImageUrl = item.getImageUrl(serverUrl)
+                        }
+                    )
+                }            }
+              // Popular Content Section - Using vertical cards for variety
+            if (featured.isNotEmpty()) {
+                item {
+                    LibraryRow(
+                        title = "Popular This Week",
+                        items = featured.drop(3).take(10), // Use different featured items
                         onItemClick = onItemClick,
                         serverUrl = serverUrl,
                         onItemFocus = { item ->
@@ -143,86 +189,6 @@ fun HomeScreen(
                     )
                 }
             }
-            
-            // Continue Watching Section (placeholder for future enhancement)
-            item {
-                LibraryRow(
-                    title = "Continue Watching",
-                    items = featured.take(8), // Use featured items as placeholder
-                    onItemClick = onItemClick,
-                    serverUrl = serverUrl,
-                    onItemFocus = { item ->
-                        backgroundImageUrl = item.getImageUrl(serverUrl)
-                    }
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun LibraryCard(
-    library: JellyfinItem,
-    serverUrl: String,
-    onLibraryClick: () -> Unit,
-    onLibraryFocus: (String?) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var isFocused by remember { mutableStateOf(false) }
-    val bannerUrl = "$serverUrl/Items/${library.Id}/Images/Banner"
-    val primaryUrl = library.getImageUrl(serverUrl)
-    
-    Card(
-        onClick = onLibraryClick,
-        modifier = modifier
-            .width(360.dp) // Larger for TV
-            .height(200.dp) // Taller for TV
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-                if (focusState.isFocused) {
-                    onLibraryFocus(primaryUrl ?: bannerUrl)
-                }
-            }
-            .focusable(),
-        shape = CardDefaults.shape(MaterialTheme.shapes.large),
-        scale = CardDefaults.scale(focusedScale = 1.08f), // Subtle scale for TV
-        colors = CardDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = CardDefaults.border(
-            focusedBorder = Border(
-                border = BorderStroke(4.dp, MaterialTheme.colorScheme.primary), // Thicker border for TV
-                shape = MaterialTheme.shapes.large
-            )
-        )
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Try banner first, fallback to primary image
-            AsyncImage(
-                model = primaryUrl ?: bannerUrl,
-                contentDescription = library.Name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            
-            // Enhanced gradient overlay for better text readability
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.7f)
-                            ),
-                            center = androidx.compose.ui.geometry.Offset.Infinite,
-                            radius = 800f
-                        )
-                    )
-            )
-              // Removed redundant text overlay since library names are already in the images
         }
     }
 }

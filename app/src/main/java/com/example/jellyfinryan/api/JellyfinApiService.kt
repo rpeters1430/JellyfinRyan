@@ -70,7 +70,19 @@ interface JellyfinApiService {
     suspend fun getEpisodes(
         @Path("showId") seasonId: String,
         @Header("X-Emby-Token") authToken: String
-    ): ApiResponse<JellyfinItem>
+    ): ApiResponse<JellyfinItem>    @GET("Users/{userId}/Items")
+    suspend fun getItemsWithImages(
+        @Path("userId") userId: String,
+        @Query("ParentId") parentId: String? = null,
+        @Query("SortBy") sortBy: String = "DateCreated",
+        @Query("SortOrder") sortOrder: String = "Descending",
+        @Query("Limit") limit: Int? = 10,
+        @Query("IncludeItemTypes") includeItemTypes: String? = null,
+        @Query("Fields") fields: String = "BasicSyncInfo,PrimaryImageAspectRatio,Overview,BackdropImageTags,ImageTags,PrimaryImageTag",
+        @Query("ImageTypeLimit") imageTypeLimit: Int = 1,
+        @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb",
+        @Header("X-Emby-Token") authToken: String
+    ): LibraryItemsResponse
 }
 
 

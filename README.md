@@ -1,13 +1,35 @@
 # JellyfinRyan
 
-JellyfinRyan is an Android TV client application for Jellyfin media servers. It allows users to connect to their Jellyfin server to browse and watch their media library directly on their Android TV devices.
+JellyfinRyan is a modern Android TV client application for Jellyfin media servers, designed following Android TV design patterns and featuring a beautiful, user-friendly interface optimized for large screens and remote control navigation.
 
 ## Key Features
 
-*   **User Authentication:** Securely log in to your Jellyfin server.
-*   **Auto-Login:** Remembers your credentials for quick access.
-*   **Media Browsing:** Explore your media libraries on the Home screen and dedicated Browse screen.
-*   **Show & Episode Viewing:** View detailed information about TV shows and navigate through episode lists.
+### 🎬 Enhanced Featured Carousel
+*   **JetStream-style Anatomy Feature:** Split-screen carousel with main content info on the left (title, description, play/info buttons) and metadata on the right (genre, rating, cast)
+*   **Cinematic Experience:** Full-screen background images with smooth transitions
+*   **Auto-rotation:** Featured content automatically cycles every 8 seconds
+*   **Focus-driven Navigation:** Background updates dynamically as you navigate
+
+### 📚 My Libraries Section
+*   **Horizontal Cards:** Beautiful 280x160dp cards showcasing library artwork
+*   **Gradient Overlays:** Enhanced readability with cinematic gradients
+*   **Focus Animations:** Smooth scaling and border highlighting for TV navigation
+
+### 🆕 Recently Added Content
+*   **Per-Library Sections:** Separate "Recently Added" sections for each library
+*   **Horizontal Scrolling:** Easy browsing of up to 15 recent items per library
+*   **Smart Loading:** Efficient API calls with image metadata optimization
+
+### 🎮 TV-Optimized Interface
+*   **Focus Management:** Advanced focus handling with auto-focus utilities
+*   **Loading States:** Elegant loading indicators and error handling
+*   **Dynamic Backgrounds:** Context-aware background images that update with focus
+*   **Remote Control Friendly:** Designed specifically for D-pad navigation
+
+### 🔧 Enhanced API Integration
+*   **Image Optimization:** Prefer backdrop images for horizontal cards, primary images for vertical
+*   **Smart Caching:** Efficient image loading with Coil
+*   **Error Resilience:** Graceful error handling with user-friendly messages
 
 ## Technology Stack
 
