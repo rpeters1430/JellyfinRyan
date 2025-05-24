@@ -1,7 +1,7 @@
 package com.example.jellyfinryan.di
 
 import android.content.Context
-import com.example.jellyfinryan.api.JellyfinSdkRepository
+import com.example.jellyfinryan.api.JellyfinRepository
 import com.example.jellyfinryan.data.preferences.DataStoreManager
 import dagger.Module
 import dagger.Provides
@@ -20,12 +20,26 @@ object AppModule {
         @ApplicationContext context: Context
     ): DataStoreManager {
         return DataStoreManager(context)
-    }    @Provides
+    }
+
+    @Provides
+    @Singleton
+    fun provideJellyfinRepository(
+        dataStoreManager: DataStoreManager
+    ): JellyfinRepository {
+        return JellyfinRepository(dataStoreManager)
+    }
+
+    // 🚨 COMMENTED OUT - Enhanced SDK Repository (causing crashes)
+    // We can re-enable this later when Ktor compatibility issues are resolved
+    /*
+    @Provides
     @Singleton
     fun provideJellyfinSdkRepository(
         @ApplicationContext context: Context
     ): JellyfinSdkRepository {
         return JellyfinSdkRepository(context)
     }
+    */
 }
 

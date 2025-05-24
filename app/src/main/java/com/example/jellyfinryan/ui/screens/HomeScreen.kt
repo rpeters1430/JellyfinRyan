@@ -43,9 +43,9 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val serverUrl = viewModel.getServerUrl()
-    
+
     var backgroundImageUrl by remember { mutableStateOf<String?>(null) }
-    
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Dynamic background
         backgroundImageUrl?.let { imageUrl ->
@@ -56,7 +56,7 @@ fun HomeScreen(
                 contentScale = ContentScale.Crop,
                 alpha = 0.3f
             )
-            
+
             // Scrim overlay for better readability
             Box(
                 modifier = Modifier
@@ -71,7 +71,7 @@ fun HomeScreen(
                         )
                     )            )
         }
-        
+
         // Loading state
         if (isLoading) {
             Box(
@@ -94,7 +94,7 @@ fun HomeScreen(
             }
             return
         }
-        
+
         // Error state
         errorMessage?.let { error ->
             Box(
@@ -121,6 +121,14 @@ fun HomeScreen(
                     ) {
                         Text("Retry")
                     }
+
+                    // 🧪 SSL TEST BUTTON (for debugging - remove after testing)
+                    Button(
+                        onClick = { viewModel.testSslBypassManual() },
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Text("🧪 Test SSL Bypass")
+                    }
                 }
             }
             return
@@ -139,10 +147,10 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                            backgroundImageUrl = item.getImageUrl(serverUrl) // Removed sdkRepository parameter
                         },
                         modifier = Modifier.height(600.dp), // Set height for carousel
-                        sdkRepository = viewModel.getSdkRepository()
+                        sdkRepository = null // Removed SDK repository dependency
                     )
                 }
             }            // My Libraries Section - Horizontal cards
@@ -153,9 +161,9 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onLibraryClick = onBrowseLibrary,
                         onLibraryFocus = { library ->
-                            backgroundImageUrl = library.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                            backgroundImageUrl = library.getImageUrl(serverUrl) // Removed sdkRepository parameter
                         },
-                        sdkRepository = viewModel.getSdkRepository()
+                        sdkRepository = null // Removed SDK repository dependency
                     )
                 }
             }            // Recently Added Sections for each library
@@ -168,9 +176,9 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                            backgroundImageUrl = item.getImageUrl(serverUrl) // Removed sdkRepository parameter
                         },
-                        sdkRepository = viewModel.getSdkRepository()
+                        sdkRepository = null // Removed SDK repository dependency
                     )
                 }
             }            // Popular Content Section - Using vertical cards for variety
@@ -182,9 +190,9 @@ fun HomeScreen(
                         onItemClick = onItemClick,
                         serverUrl = serverUrl,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                            backgroundImageUrl = item.getImageUrl(serverUrl) // Removed sdkRepository parameter
                         },
-                        sdkRepository = viewModel.getSdkRepository()
+                        sdkRepository = null // Removed SDK repository dependency
                     )
                 }
             }

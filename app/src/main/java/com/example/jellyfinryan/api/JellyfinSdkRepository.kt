@@ -54,10 +54,15 @@ class JellyfinSdkRepository @Inject constructor(
     }    /**
      * Initialize the SDK with server credentials and SSL bypass support
      */
+    // In your JellyfinSdkRepository.kt, modify the initialize method:
+
+    /**
+     * Initialize the SDK with server credentials and SSL bypass support
+     */
     suspend fun initialize(serverUrl: String, accessToken: String, userId: String): Boolean {
         return try {
-            Log.d("JellyfinSdkRepository", "Starting enhanced SDK initialization...")
-            
+            Log.d("JellyfinSdkRepository", "Starting SDK initialization...")
+
             // Check network connectivity first
             NetworkUtil.logNetworkStatus(context)
             if (!NetworkUtil.isNetworkAvailable(context)) {
@@ -68,17 +73,21 @@ class JellyfinSdkRepository @Inject constructor(
             this.serverUrl = serverUrl.removeSuffix("/")
             this.userId = userId
 
+            // 🚨 SKIP ENHANCED SDK FOR NOW - COMMENT OUT THIS SECTION:
+            /*
             // Initialize the enhanced SDK service with SSL bypass
             Log.d("JellyfinSdkRepository", "Creating EnhancedJellyfinSdkService...")
             enhancedSdkService = EnhancedJellyfinSdkService(context)
-              // Initialize the enhanced SDK service
+
+            // Initialize the enhanced SDK service
             val enhancedInitialized = enhancedSdkService!!.initialize(this.serverUrl, accessToken, this.userId)
             if (!enhancedInitialized) {
                 Log.w("JellyfinSdkRepository", "Enhanced SDK initialization failed")
                 // Continue anyway - standard SDK might still work
             }
+            */
 
-            // Initialize the standard SDK
+            // Initialize the standard SDK ONLY
             Log.d("JellyfinSdkRepository", "Creating standard Jellyfin SDK instance...")
             jellyfin = Jellyfin(
                 JellyfinOptions.Builder().apply {
@@ -89,15 +98,15 @@ class JellyfinSdkRepository @Inject constructor(
                     context = this@JellyfinSdkRepository.context
                 }.build()
             )
-            
+
             Log.d("JellyfinSdkRepository", "Creating API client for server: ${this.serverUrl}")
             apiClient = jellyfin!!.createApi(
                 baseUrl = this.serverUrl,
                 accessToken = accessToken
             )
-            
+
             isInitialized = true
-            Log.d("JellyfinSdkRepository", "Enhanced SDK initialized successfully")
+            Log.d("JellyfinSdkRepository", "Standard SDK initialized successfully")
             true
         } catch (e: Exception) {
             Log.e("JellyfinSdkRepository", "Failed to initialize SDK: ${e.message}", e)

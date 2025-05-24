@@ -40,18 +40,17 @@ import androidx.tv.material3.rememberCarouselState
 fun FeaturedCarousel(
     featuredItems: List<JellyfinItem>,
     serverUrl: String,
-    sdkRepository: com.example.jellyfinryan.api.JellyfinSdkRepository? = null,
+    sdkRepository: com.example.jellyfinryan.api.JellyfinSdkRepository? = null, // Now nullable
     onItemClick: (String) -> Unit,
     onItemFocus: (JellyfinItem) -> Unit,
     modifier: Modifier = Modifier
-) {if (featuredItems.isEmpty()) return
+) {
+    if (featuredItems.isEmpty()) return
 
     val carouselState = rememberCarouselState()
     val autoFocusRequester = FocusUtils.rememberAutoFocusRequester(enabled = true)
 
     // Call onItemFocus when the active item in the carousel changes
-    // Ensure featuredItems is part of the key if it can change dynamically,
-    // and add a check for list bounds.
     LaunchedEffect(carouselState.activeItemIndex, featuredItems) {
         if (featuredItems.isNotEmpty() && carouselState.activeItemIndex < featuredItems.size) {
             onItemFocus(featuredItems[carouselState.activeItemIndex])
@@ -66,14 +65,13 @@ fun FeaturedCarousel(
                 .focusable(), // The Carousel itself handles focus
             carouselState = carouselState,
             autoScrollDurationMillis = 8000L, // 8 seconds
-            // You can add key = { index -> featuredItems[index].Id } for better performance if IDs are stable
             content = { index ->
                 val currentItem = featuredItems[index]
                 // Box for a single carousel item's content
                 Box(
                     modifier = Modifier.fillMaxSize() // Each item fills the slide
                 ) {                    // Background image - full screen with highest quality for Featured Carousel
-                    // Now uses SDK for proper image URL generation when available
+                    // Use getFeaturedCarouselImageUrl with null sdkRepository (falls back to manual URL construction)
                     currentItem.getFeaturedCarouselImageUrl(serverUrl, sdkRepository)?.let { imageUrl ->
                         AsyncImage(
                             model = imageUrl,
@@ -194,22 +192,22 @@ fun FeaturedCarousel(
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {                                Button(
-                                    onClick = { onItemClick(currentItem.Id) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = Color.White
-                                    ),
-                                    modifier = Modifier
-                                        .height(56.dp)
-                                        .focusRequester(autoFocusRequester)
-                                        .focusable()
-                                ) {
-                                    Text(
-                                        text = "▶ Play",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
+                                onClick = { onItemClick(currentItem.Id) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier
+                                    .height(56.dp)
+                                    .focusRequester(autoFocusRequester)
+                                    .focusable()
+                            ) {
+                                Text(
+                                    text = "▶ Play",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
 
                                 OutlinedButton(
                                     onClick = { onItemClick(currentItem.Id) },
@@ -246,7 +244,7 @@ fun FeaturedCarousel(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            
+
                             Text(
                                 text = when (currentItem.Type) {
                                     "Movie" -> "Action, Adventure, Sci-Fi"
