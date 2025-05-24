@@ -256,13 +256,12 @@ class JellyfinRepository @Inject constructor(
             val api = retrofit.create(JellyfinApiService::class.java)
 
             Log.d("JellyfinRepository", "Getting recently added items for library: $libraryId")
-            val response = api.getItemsWithImages(
+            val response = api.getRecentlyAddedItems(
                 userId = userId,
                 parentId = libraryId,
-                sortBy = "DateCreated",
+                sortBy = "DateAdded",
                 sortOrder = "Descending",
-                limit = 20, // Get more items for recently added
-                includeItemTypes = null,
+                limit = 20,
                 authToken = accessToken
             )
             

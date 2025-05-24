@@ -71,9 +71,8 @@ fun FeaturedCarousel(
                 // Box for a single carousel item's content
                 Box(
                     modifier = Modifier.fillMaxSize() // Each item fills the slide
-                ) {
-                    // Background image - full screen
-                    currentItem.getImageUrl(serverUrl)?.let { imageUrl ->
+                ) {                    // Background image - full screen with highest quality for Featured Carousel
+                    currentItem.getFeaturedCarouselImageUrl(serverUrl)?.let { imageUrl ->
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = currentItem.Name,

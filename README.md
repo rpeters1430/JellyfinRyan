@@ -27,8 +27,13 @@ JellyfinRyan is a modern Android TV client application for Jellyfin media server
 *   **Remote Control Friendly:** Designed specifically for D-pad navigation
 
 ### 🔧 Enhanced API Integration
-*   **Image Optimization:** Prefer backdrop images for horizontal cards, primary images for vertical
-*   **Smart Caching:** Efficient image loading with Coil
+*   **Image Optimization:** 
+    - Featured Carousel: 1280x720 HD images for cinematic experience
+    - Recently Added Cards: 560x315 optimized 16:9 aspect ratio images
+    - Vertical Cards: 400x267 poster-style images
+*   **Smart Image Selection:** Prefer backdrop images for horizontal cards, primary images for vertical
+*   **High Quality:** 96% quality settings with proper Jellyfin API compliance
+*   **Smart Caching:** Efficient image loading with Coil and proper URL patterns
 *   **Error Resilience:** Graceful error handling with user-friendly messages
 
 ## Technology Stack
@@ -48,6 +53,17 @@ This is a standard Android Gradle project. To build it:
 3.  Open the project in Android Studio.
 4.  Let Gradle sync and download dependencies.
 5.  Build the project using the "Build" menu (e.g., "Make Project" or "Build Bundles(s) / APK(s)").
+
+## Image Quality Enhancements
+
+The app now features significantly improved image loading with proper Jellyfin API integration:
+
+*   **Featured Carousel**: Full HD 1280x720 backdrop images for cinematic presentation
+*   **Recently Added**: Optimized 560x315 horizontal cards with 16:9 aspect ratio
+*   **Library Cards**: High-quality images with proper fallback mechanisms
+*   **API Compliance**: Full adherence to official Jellyfin Image API specifications
+
+See `IMAGE_API_IMPROVEMENTS.md` for detailed technical documentation.
 
 ## Future Improvements / Known Issues
 

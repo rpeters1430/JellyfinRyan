@@ -50,15 +50,14 @@ interface JellyfinApiService {
         @Query("Limit") limit: Int? = 10,
         @Query("IncludeItemTypes") includeItemTypes: String? = null,
         @Header("X-Emby-Token") authToken: String
-    ): LibraryItemsResponse
-
-    @GET("Users/{userId}/Items/Latest")
+    ): LibraryItemsResponse    @GET("Users/{userId}/Items/Latest")
     suspend fun getLatestItems(
         @Path("userId") userId: String,
         @Query("Limit") limit: Int = 10,
-        @Query("Fields") fields: String = "BasicSyncInfo,CanDelete,PrimaryImageAspectRatio,Overview,BackdropImageTags,ImageTags,PrimaryImageTag",
-        @Query("ImageTypeLimit") imageTypeLimit: Int = 1,
-        @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb",
+        @Query("Fields") fields: String = "BasicSyncInfo,CanDelete,PrimaryImageAspectRatio,Overview,BackdropImageTags,ImageTags,PrimaryImageTag,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentPrimaryImageTag,ThumbImageTags,ScreenshotImageTags",
+        @Query("ImageTypeLimit") imageTypeLimit: Int = 3,
+        @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb,Screenshot,Logo",
+        @Query("EnableImages") enableImages: Boolean = true,
         @Header("X-Emby-Token") authToken: String
     ): List<JellyfinItem>
 
@@ -72,9 +71,7 @@ interface JellyfinApiService {
     suspend fun getEpisodes(
         @Path("showId") seasonId: String,
         @Header("X-Emby-Token") authToken: String
-    ): ApiResponse<JellyfinItem>
-
-    // FIXED: Enhanced API call with comprehensive image fields
+    ): ApiResponse<JellyfinItem>    // ENHANCED: API call with comprehensive image fields for Featured Carousel
     @GET("Users/{userId}/Items")
     suspend fun getItemsWithImages(
         @Path("userId") userId: String,
@@ -83,15 +80,13 @@ interface JellyfinApiService {
         @Query("SortOrder") sortOrder: String = "Descending",
         @Query("Limit") limit: Int? = 10,
         @Query("IncludeItemTypes") includeItemTypes: String? = null,
-        @Query("Fields") fields: String = "BasicSyncInfo,CanDelete,PrimaryImageAspectRatio,ProductionYear,Overview,Genres,Tags,Taglines,Studios,People,MediaStreams,ProviderIds,ParentId,PrimaryImageTag,BackdropImageTags,ImageTags,SeriesPrimaryImageTag,SeasonUserData,ScreenshotImageTags,ThumbImageTags",
-        @Query("ImageTypeLimit") imageTypeLimit: Int = 2, // Allow multiple images
+        @Query("Fields") fields: String = "BasicSyncInfo,CanDelete,PrimaryImageAspectRatio,ProductionYear,Overview,Genres,Tags,Taglines,Studios,People,MediaStreams,ProviderIds,ParentId,PrimaryImageTag,BackdropImageTags,ImageTags,SeriesPrimaryImageTag,SeasonUserData,ScreenshotImageTags,ThumbImageTags,ParentBackdropImageTags,ParentPrimaryImageTag,ParentThumbImageTag",
+        @Query("ImageTypeLimit") imageTypeLimit: Int = 3, // Allow multiple images per type
         @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb,Screenshot,Logo,Banner,Art,Disc",
         @Query("EnableImages") enableImages: Boolean = true,
         @Query("EnableUserData") enableUserData: Boolean = true,
         @Header("X-Emby-Token") authToken: String
-    ): LibraryItemsResponse
-
-    // NEW: Specific endpoint for recently added items with better image support
+    ): LibraryItemsResponse    // ENHANCED: Specific endpoint for recently added items with optimized image support
     @GET("Users/{userId}/Items")
     suspend fun getRecentlyAddedItems(
         @Path("userId") userId: String,
@@ -100,9 +95,9 @@ interface JellyfinApiService {
         @Query("SortOrder") sortOrder: String = "Descending",
         @Query("Limit") limit: Int = 20,
         @Query("Recursive") recursive: Boolean = true,
-        @Query("Fields") fields: String = "BasicSyncInfo,PrimaryImageAspectRatio,ProductionYear,Overview,BackdropImageTags,ImageTags,PrimaryImageTag,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentPrimaryImageTag",
-        @Query("ImageTypeLimit") imageTypeLimit: Int = 2,
-        @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb,Logo,Banner",
+        @Query("Fields") fields: String = "BasicSyncInfo,PrimaryImageAspectRatio,ProductionYear,Overview,BackdropImageTags,ImageTags,PrimaryImageTag,SeriesPrimaryImageTag,ParentBackdropImageTags,ParentPrimaryImageTag,ThumbImageTags,ScreenshotImageTags",
+        @Query("ImageTypeLimit") imageTypeLimit: Int = 3,
+        @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb,Screenshot,Logo,Banner",
         @Query("EnableImages") enableImages: Boolean = true,
         @Query("IncludeItemTypes") includeItemTypes: String = "Movie,Series,Episode,Season",
         @Header("X-Emby-Token") authToken: String
