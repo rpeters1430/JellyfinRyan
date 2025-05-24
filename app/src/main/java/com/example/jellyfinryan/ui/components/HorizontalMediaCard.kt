@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.JellyfinSdkRepository
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -31,7 +32,8 @@ fun HorizontalMediaCard(
     serverUrl: String,
     onClick: () -> Unit,
     onFocus: (JellyfinItem) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sdkRepository: JellyfinSdkRepository? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -65,7 +67,7 @@ fun HorizontalMediaCard(
         shape = CardDefaults.shape(RoundedCornerShape(12.dp))
     ) {        Box {
             // Background image - prefer horizontal images for better aspect ratio
-            val imageUrl = item.getHorizontalImageUrl(serverUrl)
+            val imageUrl = item.getHorizontalImageUrl(serverUrl, sdkRepository)
             Log.d("HorizontalMediaCard", "Item: ${item.Name}, Type: ${item.Type}, ImageURL: $imageUrl")
             
             imageUrl?.let { url ->

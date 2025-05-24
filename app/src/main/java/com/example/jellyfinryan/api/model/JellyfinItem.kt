@@ -26,9 +26,17 @@ data class JellyfinItem(
     val SeriesThumbImageTag: String?
 ) {    /**
      * Get the primary image URL for vertical cards (posters)
-     * Follows official Jellyfin API patterns for image URLs
+     * Now supports both SDK and manual URL construction
      */
-    fun getImageUrl(serverUrl: String): String? {
+    fun getImageUrl(serverUrl: String, sdkRepository: com.example.jellyfinryan.api.JellyfinSdkRepository? = null): String? {
+        // Try SDK first if available - this is the proper way that working Jellyfin clients use
+        sdkRepository?.let { sdk ->
+            if (sdk.isAvailable()) {
+                sdk.getPrimaryImageUrl(Id, 267, 400)?.let { return it }
+            }
+        }
+        
+        // Fallback to manual construction for backwards compatibility
         // Try PrimaryImageTag first
         PrimaryImageTag?.let { tag ->
             return "$serverUrl/Items/$Id/Images/Primary?tag=$tag&quality=96&fillHeight=400&fillWidth=267"
@@ -54,10 +62,17 @@ data class JellyfinItem(
         return "$serverUrl/Items/$Id/Images/Primary?quality=96&fillHeight=400&fillWidth=267"
     }    /**
      * Get horizontal image URL for landscape cards (backdrops)
-     * This is specifically for the "Recently Added" horizontal cards and Featured Carousel
-     * Uses optimal sizing for 16:9 aspect ratio content
+     * Now supports both SDK and manual URL construction
      */
-    fun getHorizontalImageUrl(serverUrl: String): String? {
+    fun getHorizontalImageUrl(serverUrl: String, sdkRepository: com.example.jellyfinryan.api.JellyfinSdkRepository? = null): String? {
+        // Try SDK first if available - this is the proper way that working Jellyfin clients use
+        sdkRepository?.let { sdk ->
+            if (sdk.isAvailable()) {
+                sdk.getHorizontalImageUrl(Id, 560, 315)?.let { return it }
+            }
+        }
+        
+        // Fallback to manual construction for backwards compatibility
         // For movies and series, prefer backdrop images (16:9 aspect ratio)
         if (Type in listOf("Movie", "Series")) {
             BackdropImageTags?.firstOrNull()?.let { backdropTag ->
@@ -113,10 +128,10 @@ data class JellyfinItem(
         }
 
         // Generic fallback - try primary image with horizontal sizing
-        return getImageUrl(serverUrl)?.let { url ->
+        return getImageUrl(serverUrl, sdkRepository)?.let { url ->
             url.replace("fillHeight=400&fillWidth=267", "fillHeight=315&fillWidth=560")
         }
-    }    /**
+    }/**
      * Get the best available image URL for any context
      */
     fun getBestImageUrl(serverUrl: String, preferHorizontal: Boolean = false): String? {
@@ -125,13 +140,19 @@ data class JellyfinItem(
         } else {
             getImageUrl(serverUrl)
         }
-    }
-
-    /**
+    }    /**
      * Get the best image URL for Featured Carousel (prioritizes largest backdrops)
-     * This method specifically targets the largest, highest quality images for carousel
+     * Now supports both SDK and manual URL construction
      */
-    fun getFeaturedCarouselImageUrl(serverUrl: String): String? {
+    fun getFeaturedCarouselImageUrl(serverUrl: String, sdkRepository: com.example.jellyfinryan.api.JellyfinSdkRepository? = null): String? {
+        // Try SDK first if available - this is the proper way that working Jellyfin clients use
+        sdkRepository?.let { sdk ->
+            if (sdk.isAvailable()) {
+                sdk.getFeaturedCarouselImageUrl(Id)?.let { return it }
+            }
+        }
+        
+        // Fallback to manual construction for backwards compatibility
         // First try backdrop images (best for featured carousel)
         BackdropImageTags?.firstOrNull()?.let { backdropTag ->
             return "$serverUrl/Items/$Id/Images/Backdrop/0?tag=$backdropTag&quality=96&fillHeight=720&fillWidth=1280"

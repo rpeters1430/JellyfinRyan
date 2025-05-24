@@ -31,6 +31,10 @@ class JellyfinRepository @Inject constructor(
     }
 
     fun getServerUrl(): String = serverUrl
+    
+    fun getUserId(): String = userId
+    
+    fun getAccessToken(): String = accessToken
 
     suspend fun login(serverUrl: String, username: String, password: String): Result<Boolean> {
         return try {

@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.JellyfinSdkRepository
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -19,7 +20,8 @@ fun RecentlyAddedSection(
     serverUrl: String,
     onItemClick: (String) -> Unit,
     onItemFocus: (JellyfinItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sdkRepository: JellyfinSdkRepository? = null
 ) {
     if (items.isEmpty()) return
 
@@ -37,13 +39,13 @@ fun RecentlyAddedSection(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 48.dp)
-        ) {
-            items(items) { item ->
+        ) {            items(items) { item ->
                 HorizontalMediaCard(
                     item = item,
                     serverUrl = serverUrl,
                     onClick = { onItemClick(item.Id) },
-                    onFocus = onItemFocus
+                    onFocus = onItemFocus,
+                    sdkRepository = sdkRepository
                 )
             }
         }

@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.JellyfinSdkRepository
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -18,7 +19,8 @@ fun MyLibrariesSection(
     serverUrl: String,
     onLibraryClick: (String) -> Unit,
     onLibraryFocus: (JellyfinItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sdkRepository: JellyfinSdkRepository? = null
 ) {
     if (libraries.isEmpty()) return
 
@@ -36,14 +38,14 @@ fun MyLibrariesSection(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(horizontal = 48.dp)
-        ) {
-            items(libraries) { library ->
+        ) {            items(libraries) { library ->
                 HorizontalMediaCard(
                     item = library,
                     serverUrl = serverUrl,
                     onClick = { onLibraryClick(library.Id) },
                     onFocus = onLibraryFocus,
-                    modifier = Modifier.width(300.dp).height(180.dp) // Slightly larger for libraries
+                    modifier = Modifier.width(300.dp).height(180.dp), // Slightly larger for libraries
+                    sdkRepository = sdkRepository
                 )
             }
         }

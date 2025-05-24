@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.JellyfinSdkRepository
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -24,7 +25,8 @@ fun MediaCard(
     serverUrl: String,
     onClick: () -> Unit,
     onFocus: (JellyfinItem) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sdkRepository: JellyfinSdkRepository? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -49,7 +51,7 @@ fun MediaCard(
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
             ) {
-                item.getImageUrl(serverUrl)?.let { imageUrl ->
+                item.getImageUrl(serverUrl, sdkRepository)?.let { imageUrl ->
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = item.Name,

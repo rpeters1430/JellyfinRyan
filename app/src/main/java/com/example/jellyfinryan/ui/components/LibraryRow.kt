@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.example.jellyfinryan.api.model.JellyfinItem
+import com.example.jellyfinryan.api.JellyfinSdkRepository
 
 @Composable
 fun LibraryRow(
@@ -17,7 +18,8 @@ fun LibraryRow(
     onItemClick: (String) -> Unit,
     serverUrl: String,
     onItemFocus: (JellyfinItem) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sdkRepository: JellyfinSdkRepository? = null
 ) {
     Column(modifier.padding(bottom = 24.dp)) {
         Text(
@@ -31,13 +33,13 @@ fun LibraryRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 48.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            items(items) { item ->
+        ) {            items(items) { item ->
                 MediaCard(
                     item = item,
                     serverUrl = serverUrl,
                     onClick = { onItemClick(item.Id) },
-                    onFocus = { onItemFocus(item) }
+                    onFocus = { onItemFocus(item) },
+                    sdkRepository = sdkRepository
                 )
             }
         }

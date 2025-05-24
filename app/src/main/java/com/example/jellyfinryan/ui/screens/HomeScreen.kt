@@ -131,8 +131,7 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(32.dp), // Increased spacing for TV
             contentPadding = PaddingValues(vertical = 40.dp) // Increased padding for TV
-        ) {
-            // Featured Carousel Section - Enhanced for TV with Anatomy feature
+        ) {            // Featured Carousel Section - Enhanced for TV with Anatomy feature
             if (featured.isNotEmpty()) {
                 item {
                     FeaturedCarousel(
@@ -140,14 +139,13 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl)
+                            backgroundImageUrl = item.getImageUrl(serverUrl, viewModel.getSdkRepository())
                         },
-                        modifier = Modifier.height(600.dp) // Set height for carousel
+                        modifier = Modifier.height(600.dp), // Set height for carousel
+                        sdkRepository = viewModel.getSdkRepository()
                     )
                 }
-            }
-            
-            // My Libraries Section - Horizontal cards
+            }            // My Libraries Section - Horizontal cards
             if (libraries.isNotEmpty()) {
                 item {
                     MyLibrariesSection(
@@ -155,13 +153,12 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onLibraryClick = onBrowseLibrary,
                         onLibraryFocus = { library ->
-                            backgroundImageUrl = library.getImageUrl(serverUrl)
-                        }
+                            backgroundImageUrl = library.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                        },
+                        sdkRepository = viewModel.getSdkRepository()
                     )
                 }
-            }
-            
-            // Recently Added Sections for each library
+            }            // Recently Added Sections for each library
             items(libraries) { library ->
                 val recentItems = recentlyAddedItems[library.Id] ?: emptyList()
                 if (recentItems.isNotEmpty()) {
@@ -171,11 +168,12 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl)
-                        }
+                            backgroundImageUrl = item.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                        },
+                        sdkRepository = viewModel.getSdkRepository()
                     )
-                }            }
-              // Popular Content Section - Using vertical cards for variety
+                }
+            }            // Popular Content Section - Using vertical cards for variety
             if (featured.isNotEmpty()) {
                 item {
                     LibraryRow(
@@ -184,8 +182,9 @@ fun HomeScreen(
                         onItemClick = onItemClick,
                         serverUrl = serverUrl,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl)
-                        }
+                            backgroundImageUrl = item.getImageUrl(serverUrl, viewModel.getSdkRepository())
+                        },
+                        sdkRepository = viewModel.getSdkRepository()
                     )
                 }
             }

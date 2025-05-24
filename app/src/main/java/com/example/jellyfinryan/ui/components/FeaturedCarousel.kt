@@ -40,10 +40,11 @@ import androidx.tv.material3.rememberCarouselState
 fun FeaturedCarousel(
     featuredItems: List<JellyfinItem>,
     serverUrl: String,
+    sdkRepository: com.example.jellyfinryan.api.JellyfinSdkRepository? = null,
     onItemClick: (String) -> Unit,
     onItemFocus: (JellyfinItem) -> Unit,
     modifier: Modifier = Modifier
-) {    if (featuredItems.isEmpty()) return
+) {if (featuredItems.isEmpty()) return
 
     val carouselState = rememberCarouselState()
     val autoFocusRequester = FocusUtils.rememberAutoFocusRequester(enabled = true)
@@ -72,7 +73,8 @@ fun FeaturedCarousel(
                 Box(
                     modifier = Modifier.fillMaxSize() // Each item fills the slide
                 ) {                    // Background image - full screen with highest quality for Featured Carousel
-                    currentItem.getFeaturedCarouselImageUrl(serverUrl)?.let { imageUrl ->
+                    // Now uses SDK for proper image URL generation when available
+                    currentItem.getFeaturedCarouselImageUrl(serverUrl, sdkRepository)?.let { imageUrl ->
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = currentItem.Name,
