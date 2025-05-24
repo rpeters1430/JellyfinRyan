@@ -38,6 +38,8 @@ class JellyfinSdkService @Inject constructor(
                     name = "JellyfinRyan",
                     version = "1.0"
                 )
+                // Add Android context - this fixes the error
+                context = this@JellyfinSdkService.context
             }.build()
         )
         

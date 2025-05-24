@@ -26,24 +26,37 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Enhanced Jellyfin Repository using the official Jellyfin SDK
- * This provides proper image URL generation that working Jellyfin clients use
+ * Enhanced Jellyfin Repository using the official Jellyfin SDK with SSL bypass support
+ * This provides proper image URL generation and handles self-signed certificates
  */
 @Singleton
 class JellyfinSdkRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-      private var jellyfin: Jellyfin? = null
+    private var enhancedSdkService: EnhancedJellyfinSdkService? = null
+    private var jellyfin: Jellyfin? = null
     private var apiClient: ApiClient? = null
     private var isInitialized = false
     private var serverUrl: String = ""
     private var userId: String = ""
       /**
-     * Initialize the SDK with server credentials
+     * Format a 32-character UUID string to proper UUID format with hyphens
+     */
+    private fun formatUuid(uuidString: String): java.util.UUID {
+        val cleanUuid = uuidString.replace("-", "")
+        if (cleanUuid.length != 32) {
+            throw IllegalArgumentException("UUID string must be 32 characters long, got: '${uuidString}' (${cleanUuid.length} chars)")
+        }
+        
+        val formattedUuid = "${cleanUuid.substring(0, 8)}-${cleanUuid.substring(8, 12)}-${cleanUuid.substring(12, 16)}-${cleanUuid.substring(16, 20)}-${cleanUuid.substring(20, 32)}"
+        Log.d("JellyfinSdkRepository", "Formatted UUID from '$uuidString' to '$formattedUuid'")
+        return java.util.UUID.fromString(formattedUuid)
+    }    /**
+     * Initialize the SDK with server credentials and SSL bypass support
      */
     suspend fun initialize(serverUrl: String, accessToken: String, userId: String): Boolean {
         return try {
-            Log.d("JellyfinSdkRepository", "Starting SDK initialization...")
+            Log.d("JellyfinSdkRepository", "Starting enhanced SDK initialization...")
             
             // Check network connectivity first
             NetworkUtil.logNetworkStatus(context)
@@ -51,16 +64,29 @@ class JellyfinSdkRepository @Inject constructor(
                 Log.w("JellyfinSdkRepository", "No network connectivity available")
                 return false
             }
-              this.serverUrl = serverUrl.removeSuffix("/")
+
+            this.serverUrl = serverUrl.removeSuffix("/")
             this.userId = userId
-            
-            Log.d("JellyfinSdkRepository", "Creating Jellyfin instance with ClientInfo")
+
+            // Initialize the enhanced SDK service with SSL bypass
+            Log.d("JellyfinSdkRepository", "Creating EnhancedJellyfinSdkService...")
+            enhancedSdkService = EnhancedJellyfinSdkService(context)
+              // Initialize the enhanced SDK service
+            val enhancedInitialized = enhancedSdkService!!.initialize(this.serverUrl, accessToken, this.userId)
+            if (!enhancedInitialized) {
+                Log.w("JellyfinSdkRepository", "Enhanced SDK initialization failed")
+                // Continue anyway - standard SDK might still work
+            }
+
+            // Initialize the standard SDK
+            Log.d("JellyfinSdkRepository", "Creating standard Jellyfin SDK instance...")
             jellyfin = Jellyfin(
                 JellyfinOptions.Builder().apply {
                     clientInfo = ClientInfo(
                         name = "JellyfinRyan",
                         version = "1.0"
                     )
+                    context = this@JellyfinSdkRepository.context
                 }.build()
             )
             
@@ -71,7 +97,7 @@ class JellyfinSdkRepository @Inject constructor(
             )
             
             isInitialized = true
-            Log.d("JellyfinSdkRepository", "SDK initialized successfully")
+            Log.d("JellyfinSdkRepository", "Enhanced SDK initialized successfully")
             true
         } catch (e: Exception) {
             Log.e("JellyfinSdkRepository", "Failed to initialize SDK: ${e.message}", e)
@@ -79,19 +105,17 @@ class JellyfinSdkRepository @Inject constructor(
             false
         }
     }
-    
-    /**
+      /**
      * Check if SDK is available and initialized
      */
-    fun isAvailable(): Boolean = isInitialized && apiClient != null && jellyfin != null
+    fun isAvailable(): Boolean = isInitialized && (apiClient != null || enhancedSdkService != null)
     
     /**
      * Get the current server URL
      */
     fun getServerUrl(): String = serverUrl
-    
-    /**
-     * Get proper image URL using the official SDK
+      /**
+     * Get proper image URL using the official SDK with enhanced fallback
      * This is the key - using the SDK's built-in image URL generation
      */
     fun getImageUrl(
@@ -101,20 +125,37 @@ class JellyfinSdkRepository @Inject constructor(
         maxHeight: Int? = null,
         quality: Int = 96
     ): String? {
-        return if (!isAvailable()) {
-            null        } else {
-            try {
-                apiClient?.imageApi?.getItemImageUrl(
-                    itemId = java.util.UUID.fromString(itemId),
-                    imageType = imageType,
-                    maxWidth = maxWidth,
-                    maxHeight = maxHeight,
-                    quality = quality
-                )
-            } catch (e: Exception) {
-                Log.e("JellyfinSdkRepository", "Failed to get image URL for item $itemId", e)
-                null
+        if (!isAvailable()) {
+            return null
+        }
+        
+        // Try standard SDK first
+        try {
+            val sdkUrl = apiClient?.imageApi?.getItemImageUrl(
+                itemId = formatUuid(itemId),
+                imageType = imageType,
+                maxWidth = maxWidth,
+                maxHeight = maxHeight,
+                quality = quality
+            )
+            if (sdkUrl != null) {
+                return sdkUrl
             }
+        } catch (e: Exception) {
+            Log.w("JellyfinSdkRepository", "Standard SDK failed for image URL, trying enhanced service: ${e.message}")
+        }
+          // Fallback to enhanced service with SSL bypass
+        return try {
+            enhancedSdkService?.getImageUrl(
+                itemId = itemId,
+                imageType = imageType,
+                maxWidth = maxWidth,
+                maxHeight = maxHeight,
+                quality = quality
+            )
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Failed to get image URL for item $itemId", e)
+            null
         }
     }
     
@@ -144,18 +185,19 @@ class JellyfinSdkRepository @Inject constructor(
         return getBackdropImageUrl(itemId, 1280, 720) 
             ?: getPrimaryImageUrl(itemId, 1280, 720)
     }
-    
-    /**
-     * Get recent items using SDK
+      /**
+     * Get recent items using SDK with enhanced fallback
      */
     fun getRecentItems(limit: Int = 20): Flow<List<JellyfinItem>> = flow {
         if (!isAvailable()) {
             emit(emptyList())
             return@flow
         }
-        
-        try {            val response = apiClient?.userLibraryApi?.getLatestMedia(
-                userId = java.util.UUID.fromString(userId),
+
+        // Try standard SDK first
+        try {
+            val response = apiClient?.userLibraryApi?.getLatestMedia(
+                userId = formatUuid(userId),
                 limit = limit,
                 fields = listOf(
                     ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
@@ -173,26 +215,60 @@ class JellyfinSdkRepository @Inject constructor(
             val items = response?.content?.map { baseItem -> 
                 convertSdkItemToJellyfinItem(baseItem)
             } ?: emptyList()
-            
+
             Log.d("JellyfinSdkRepository", "SDK returned ${items.size} recent items")
             emit(items)
+            return@flow
         } catch (e: Exception) {
-            Log.e("JellyfinSdkRepository", "Failed to get recent items from SDK", e)
+            Log.w("JellyfinSdkRepository", "Standard SDK failed for recent items, trying enhanced service: ${e.message}")
+        }
+          // Fallback to enhanced service
+        try {
+            val baseItems = enhancedSdkService?.getRecentItems(userId, limit) ?: emptyList()
+            val items = baseItems.map { baseItem ->
+                JellyfinItem(
+                    Id = baseItem.id.toString(),
+                    Name = baseItem.name ?: "",
+                    Type = baseItem.type?.toString() ?: "",
+                    PrimaryImageTag = null, // Not needed with SDK
+                    Overview = baseItem.overview,
+                    PremiereDate = baseItem.premiereDate?.toString(),
+                    CommunityRating = baseItem.communityRating?.toFloat(),
+                    OfficialRating = baseItem.officialRating,
+                    RunTimeTicks = baseItem.runTimeTicks,
+                    ImageTags = null, // Not needed with SDK
+                    ParentId = baseItem.parentId?.toString(),
+                    BackdropImageTags = null, // Not needed with SDK
+                    SeriesPrimaryImageTag = null, // Not needed with SDK
+                    ParentPrimaryImageTag = null, // Not needed with SDK
+                    ParentBackdropImageTags = null, // Not needed with SDK
+                    ThumbImageTags = null, // Not needed with SDK
+                    ScreenshotImageTags = null, // Not needed with SDK
+                    ProductionYear = baseItem.productionYear,
+                    ParentThumbImageTag = null, // Not needed with SDK
+                    SeriesThumbImageTag = null // Not needed with SDK
+                )
+            }
+            Log.d("JellyfinSdkRepository", "Enhanced service returned ${items.size} recent items")
+            emit(items)
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Enhanced service also failed for recent items: ${e.message}")
             emit(emptyList())
         }
     }
-    
-    /**
-     * Get featured items for carousel using SDK
+      /**
+     * Get featured items for carousel using SDK with enhanced fallback
      */
     fun getFeaturedItems(limit: Int = 10): Flow<List<JellyfinItem>> = flow {
         if (!isAvailable()) {
             emit(emptyList())
             return@flow
         }
-        
-        try {            val response = apiClient?.itemsApi?.getItems(
-                userId = java.util.UUID.fromString(userId),
+
+        // Try standard SDK first
+        try {
+            val response = apiClient?.itemsApi?.getItems(
+                userId = formatUuid(userId),
                 limit = limit,
                 recursive = true,
                 fields = listOf(
@@ -211,14 +287,49 @@ class JellyfinSdkRepository @Inject constructor(
                 imageTypeLimit = 3
             )
             
-            val items = response?.content?.items?.map { baseItem -> 
+            Log.d("JellyfinSdkRepository", "getFeaturedItems API response: ${response?.content?.items?.size ?: 0} items")
+            
+            val items = response?.content?.items?.map { baseItem ->
                 convertSdkItemToJellyfinItem(baseItem)
             } ?: emptyList()
             
             Log.d("JellyfinSdkRepository", "SDK returned ${items.size} featured items")
             emit(items)
+            return@flow
         } catch (e: Exception) {
-            Log.e("JellyfinSdkRepository", "Failed to get featured items from SDK", e)
+            Log.w("JellyfinSdkRepository", "Standard SDK failed for featured items, trying enhanced service: ${e.message}")
+        }
+          // Fallback to enhanced service
+        try {
+            val baseItems = enhancedSdkService?.getFeaturedItems(userId, limit) ?: emptyList()
+            val items = baseItems.map { baseItem ->
+                JellyfinItem(
+                    Id = baseItem.id.toString(),
+                    Name = baseItem.name ?: "",
+                    Type = baseItem.type?.toString() ?: "",
+                    PrimaryImageTag = null, // Not needed with SDK
+                    Overview = baseItem.overview,
+                    PremiereDate = baseItem.premiereDate?.toString(),
+                    CommunityRating = baseItem.communityRating?.toFloat(),
+                    OfficialRating = baseItem.officialRating,
+                    RunTimeTicks = baseItem.runTimeTicks,
+                    ImageTags = null, // Not needed with SDK
+                    ParentId = baseItem.parentId?.toString(),
+                    BackdropImageTags = null, // Not needed with SDK
+                    SeriesPrimaryImageTag = null, // Not needed with SDK
+                    ParentPrimaryImageTag = null, // Not needed with SDK
+                    ParentBackdropImageTags = null, // Not needed with SDK
+                    ThumbImageTags = null, // Not needed with SDK
+                    ScreenshotImageTags = null, // Not needed with SDK
+                    ProductionYear = baseItem.productionYear,
+                    ParentThumbImageTag = null, // Not needed with SDK
+                    SeriesThumbImageTag = null // Not needed with SDK
+                )
+            }
+            Log.d("JellyfinSdkRepository", "Enhanced service returned ${items.size} featured items")
+            emit(items)
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Enhanced service also failed for featured items: ${e.message}")
             emit(emptyList())
         }
     }
@@ -231,9 +342,8 @@ class JellyfinSdkRepository @Inject constructor(
             emit(emptyList())
             return@flow
         }
-        
-        try {            val response = apiClient?.userViewsApi?.getUserViews(
-                userId = java.util.UUID.fromString(userId)
+          try {            val response = apiClient?.userViewsApi?.getUserViews(
+                userId = formatUuid(userId)
             )
               val libraries = response?.content?.items?.map { baseItem ->
                 JellyfinLibrary(
@@ -253,9 +363,8 @@ class JellyfinSdkRepository @Inject constructor(
             emit(emptyList())
         }
     }
-    
-    /**
-     * Get user views (libraries) - alias for getLibraries to match ViewModel expectations
+      /**
+     * Get user views (libraries) with enhanced fallback - alias for getLibraries to match ViewModel expectations
      */
     fun getUserViews(): Flow<List<JellyfinItem>> = flow {
         if (!isAvailable()) {
@@ -263,10 +372,14 @@ class JellyfinSdkRepository @Inject constructor(
             return@flow
         }
         
+        // Try standard SDK first
         try {
+            Log.d("JellyfinSdkRepository", "Making getUserViews API call with userId: ${userId}")
             val response = apiClient?.userViewsApi?.getUserViews(
-                userId = java.util.UUID.fromString(userId)
+                userId = formatUuid(userId)
             )
+            
+            Log.d("JellyfinSdkRepository", "getUserViews API response: ${response?.content?.items?.size ?: 0} items")
             
             val libraries = response?.content?.items?.map { baseItem ->
                 JellyfinItem(
@@ -295,25 +408,59 @@ class JellyfinSdkRepository @Inject constructor(
             
             Log.d("JellyfinSdkRepository", "SDK returned ${libraries.size} user views")
             emit(libraries)
+            return@flow
         } catch (e: Exception) {
-            Log.e("JellyfinSdkRepository", "Failed to get user views from SDK", e)
+            Log.w("JellyfinSdkRepository", "Standard SDK failed for user views, trying enhanced service: ${e.message}")
+        }
+          // Fallback to enhanced service
+        try {
+            val baseItems = enhancedSdkService?.getUserViews(userId) ?: emptyList()
+            val libraries = baseItems.map { baseItem ->
+                JellyfinItem(
+                    Id = baseItem.id.toString(),
+                    Name = baseItem.name ?: "",
+                    Type = baseItem.type?.toString() ?: "UserView",
+                    PrimaryImageTag = null, // Not needed with SDK
+                    Overview = baseItem.overview,
+                    PremiereDate = null,
+                    CommunityRating = null,
+                    OfficialRating = null,
+                    RunTimeTicks = null,
+                    ImageTags = null, // Not needed with SDK
+                    ParentId = baseItem.parentId?.toString(),
+                    BackdropImageTags = null, // Not needed with SDK
+                    SeriesPrimaryImageTag = null, // Not needed with SDK
+                    ParentPrimaryImageTag = null, // Not needed with SDK
+                    ParentBackdropImageTags = null, // Not needed with SDK
+                    ThumbImageTags = null, // Not needed with SDK
+                    ScreenshotImageTags = null, // Not needed with SDK
+                    ProductionYear = baseItem.productionYear,
+                    ParentThumbImageTag = null, // Not needed with SDK
+                    SeriesThumbImageTag = null // Not needed with SDK
+                )
+            }
+            Log.d("JellyfinSdkRepository", "Enhanced service returned ${libraries.size} user views")
+            emit(libraries)
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Enhanced service also failed for user views: ${e.message}")
             emit(emptyList())
         }
     }
-    
-    /**
-     * Get items for a specific library
+      /**
+     * Get items for a specific library with enhanced fallback
      */
     fun getLibraryItems(libraryId: String, limit: Int = 50): Flow<List<JellyfinItem>> = flow {
         if (!isAvailable()) {
             emit(emptyList())
             return@flow
         }
-        
+
+        // Try standard SDK first
         try {
+            Log.d("JellyfinSdkRepository", "Making getLibraryItems API call with userId: ${userId}")
             val response = apiClient?.itemsApi?.getItems(
-                userId = java.util.UUID.fromString(userId),
-                parentId = java.util.UUID.fromString(libraryId),
+                userId = formatUuid(userId),
+                parentId = formatUuid(libraryId),
                 limit = limit,
                 recursive = true,
                 fields = listOf(
@@ -337,16 +484,48 @@ class JellyfinSdkRepository @Inject constructor(
             
             Log.d("JellyfinSdkRepository", "SDK returned ${items.size} items for library $libraryId")
             emit(items)
+            return@flow
         } catch (e: Exception) {
-            Log.e("JellyfinSdkRepository", "Failed to get library items from SDK", e)
+            Log.w("JellyfinSdkRepository", "Standard SDK failed for library items, trying enhanced service: ${e.message}")
+        }
+          // Fallback to enhanced service
+        try {
+            val baseItems = enhancedSdkService?.getLibraryItems(userId, libraryId, limit) ?: emptyList()
+            val items = baseItems.map { baseItem ->
+                JellyfinItem(
+                    Id = baseItem.id.toString(),
+                    Name = baseItem.name ?: "",
+                    Type = baseItem.type?.toString() ?: "",
+                    PrimaryImageTag = null, // Not needed with SDK
+                    Overview = baseItem.overview,
+                    PremiereDate = baseItem.premiereDate?.toString(),
+                    CommunityRating = baseItem.communityRating?.toFloat(),
+                    OfficialRating = baseItem.officialRating,
+                    RunTimeTicks = baseItem.runTimeTicks,
+                    ImageTags = null, // Not needed with SDK
+                    ParentId = baseItem.parentId?.toString(),
+                    BackdropImageTags = null, // Not needed with SDK
+                    SeriesPrimaryImageTag = null, // Not needed with SDK
+                    ParentPrimaryImageTag = null, // Not needed with SDK
+                    ParentBackdropImageTags = null, // Not needed with SDK
+                    ThumbImageTags = null, // Not needed with SDK
+                    ScreenshotImageTags = null, // Not needed with SDK
+                    ProductionYear = baseItem.productionYear,
+                    ParentThumbImageTag = null, // Not needed with SDK
+                    SeriesThumbImageTag = null // Not needed with SDK
+                )
+            }
+            Log.d("JellyfinSdkRepository", "Enhanced service returned ${items.size} items for library $libraryId")
+            emit(items)
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Enhanced service also failed for library items: ${e.message}")
             emit(emptyList())
         }
     }
     
     /**
      * Get recently added items for a specific library
-     */
-    fun getRecentlyAddedForLibrary(libraryId: String, limit: Int = 20): Flow<List<JellyfinItem>> = flow {
+     */    fun getRecentlyAddedForLibrary(libraryId: String, limit: Int = 20): Flow<List<JellyfinItem>> = flow {
         if (!isAvailable()) {
             emit(emptyList())
             return@flow
@@ -354,8 +533,8 @@ class JellyfinSdkRepository @Inject constructor(
         
         try {
             val response = apiClient?.userLibraryApi?.getLatestMedia(
-                userId = java.util.UUID.fromString(userId),
-                parentId = java.util.UUID.fromString(libraryId),
+                userId = formatUuid(userId),
+                parentId = formatUuid(libraryId),
                 limit = limit,
                 fields = listOf(
                     ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
@@ -409,5 +588,39 @@ class JellyfinSdkRepository @Inject constructor(
             ParentThumbImageTag = null, // Not needed with SDK
             SeriesThumbImageTag = null // Not needed with SDK
         )
+    }
+
+    /**
+     * Test connectivity with both standard SDK and enhanced service
+     * This method helps debug SSL certificate issues
+     */
+    suspend fun testConnectivity(accessToken: String): Boolean {
+        if (!isAvailable()) {
+            Log.w("JellyfinSdkRepository", "Repository not initialized")
+            return false
+        }
+        
+        Log.d("JellyfinSdkRepository", "Testing connectivity to server: $serverUrl")
+          // Test enhanced service first (with SSL bypass)
+        val enhancedResult = try {
+            enhancedSdkService?.testConnectivity() ?: false
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Enhanced service connectivity test failed: ${e.message}")
+            false
+        }
+        
+        // Test standard SDK
+        val sdkResult = try {
+            val response = apiClient?.userViewsApi?.getUserViews(
+                userId = formatUuid(userId)
+            )
+            response?.content?.items?.isNotEmpty() == true
+        } catch (e: Exception) {
+            Log.e("JellyfinSdkRepository", "Standard SDK connectivity test failed: ${e.message}")
+            false
+        }
+        
+        Log.d("JellyfinSdkRepository", "Connectivity test results - Enhanced: $enhancedResult, SDK: $sdkResult")
+        return enhancedResult || sdkResult
     }
 }

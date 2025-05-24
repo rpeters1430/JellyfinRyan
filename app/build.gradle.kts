@@ -52,14 +52,19 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.ui.tooling)
-    implementation(libs.androidx.foundation)
-
-    // TV-specific dependencies - using an older version for compatibility
+    implementation(libs.androidx.foundation)    // TV-specific dependencies - using an older version for compatibility
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)    // Official Jellyfin SDK - the proper way to connect to Jellyfin servers
     implementation("org.jellyfin.sdk:jellyfin-core:1.6.8")
     implementation("org.jellyfin.sdk:jellyfin-model:1.6.8")
     implementation("org.jellyfin.sdk:jellyfin-api-ktor:1.6.8")
+    
+    // Ktor dependencies for SSL bypass configuration - compatible with Jellyfin SDK
+    implementation("io.ktor:ktor-client-okhttp:2.3.12")
+    implementation("io.ktor:ktor-client-core:2.3.12")
+    
+    // SLF4J logger implementation to fix logging warnings
+    implementation("org.slf4j:slf4j-android:1.7.36")
 
     // Dependency Injection - using an older version for better compatibility
     implementation(libs.hilt.android)

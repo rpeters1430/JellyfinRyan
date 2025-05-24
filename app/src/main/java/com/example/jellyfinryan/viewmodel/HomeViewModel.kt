@@ -31,21 +31,20 @@ class HomeViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
-    private val _errorMessage = MutableStateFlow<String?>(null)
+      private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-      init {
-        fetchLibraries()
-        loadFeatured()
+    
+    init {
         initializeSdk()
     }
     
     /**
-     * Initialize the SDK for proper image URL generation
+     * Initialize the SDK for proper image URL generation and then load data
      */
     private fun initializeSdk() {
         viewModelScope.launch {
             try {
+                android.util.Log.d("HomeViewModel", "Starting SDK initialization...")
                 val credentials = dataStoreManager.getCredentials()
                 if (!credentials.serverUrl.isNullOrEmpty() && 
                     !credentials.accessToken.isNullOrEmpty() && 
@@ -57,40 +56,63 @@ class HomeViewModel @Inject constructor(
                         credentials.userId
                     )
                     android.util.Log.d("HomeViewModel", "SDK initialization ${if (success) "successful" else "failed"}")
+                    
+                    if (success) {
+                        // Only start fetching data after successful SDK initialization
+                        android.util.Log.d("HomeViewModel", "Starting data fetch...")
+                        fetchLibraries()
+                        loadFeatured()
+                    } else {
+                        _errorMessage.value = "Failed to connect to Jellyfin server"
+                        _isLoading.value = false
+                    }
+                } else {
+                    android.util.Log.w("HomeViewModel", "Missing credentials for SDK initialization")
+                    _errorMessage.value = "Missing server credentials"
+                    _isLoading.value = false
                 }
             } catch (e: Exception) {
                 android.util.Log.e("HomeViewModel", "SDK initialization failed", e)
-                // SDK initialization failed, but app should still work with fallback
+                _errorMessage.value = "Failed to initialize: ${e.message}"
+                _isLoading.value = false
             }
         }
-    }    /**
+    }/**
      * Get the SDK repository for image URL generation
      */
     fun getSdkRepository(): JellyfinSdkRepository = sdkRepository
-    
-    private fun fetchLibraries() {
+      private fun fetchLibraries() {
         viewModelScope.launch {
-            try {                sdkRepository.getUserViews().collect { views ->
+            try {
+                android.util.Log.d("HomeViewModel", "Starting to fetch libraries...")
+                sdkRepository.getUserViews().collect { views ->
+                    android.util.Log.d("HomeViewModel", "Received ${views.size} libraries from SDK")
                     _libraries.value = views
                     _errorMessage.value = null
 
                     // Only fetch items for libraries that have actual items
                     views.forEach { library ->
+                        android.util.Log.d("HomeViewModel", "Fetching items for library: ${library.Name} (${library.Id})")
                         fetchItemsForLibrary(library.Id)
                         fetchRecentlyAddedForLibrary(library.Id)
                     }
                     
                     // Set loading to false once libraries are loaded
                     if (views.isNotEmpty()) {
+                        android.util.Log.d("HomeViewModel", "Libraries loaded successfully, setting loading to false")
+                        _isLoading.value = false
+                    } else {
+                        android.util.Log.w("HomeViewModel", "No libraries found, setting loading to false")
                         _isLoading.value = false
                     }
                 }
             } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "Failed to fetch libraries", e)
                 _errorMessage.value = "Failed to load libraries: ${e.message}"
                 _isLoading.value = false
             }
         }
-    }    private fun fetchItemsForLibrary(libraryId: String) {
+    }private fun fetchItemsForLibrary(libraryId: String) {
         viewModelScope.launch {
             try {                sdkRepository.getLibraryItems(libraryId).collect { items ->
                     _libraryItems.update { current ->
@@ -114,15 +136,17 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
-    
-    private fun loadFeatured() {
+      private fun loadFeatured() {
         viewModelScope.launch {
             try {
+                android.util.Log.d("HomeViewModel", "Starting to load featured content...")
                 // Use the sdkRepository's getFeaturedItems method for better content
                 sdkRepository.getFeaturedItems().collect { featuredItems ->
+                    android.util.Log.d("HomeViewModel", "Received ${featuredItems.size} featured items from SDK")
                     _featured.value = featuredItems.take(8) // Limit to 8 for TV carousel
                 }
             } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "Failed to load featured content", e)
                 _errorMessage.value = "Failed to load featured content: ${e.message}"
             }
         }
