@@ -2,6 +2,7 @@ package com.example.jellyfinryan.api.model
 
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
+import com.example.jellyfinryan.utils.UnsafeKtorClient
 
 /**
  * Wrapper class for Jellyfin SDK BaseItemDto to maintain compatibility
