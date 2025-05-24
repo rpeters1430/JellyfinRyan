@@ -3,6 +3,7 @@ package com.example.jellyfinryan.api
 import android.util.Log
 import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.data.preferences.DataStoreManager
+import com.example.jellyfinryan.utils.UnsafeOkHttpClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.OkHttpClient
@@ -77,14 +78,14 @@ class JellyfinRepository @Inject constructor(
         serverUrl = ""
         userId = ""
         accessToken = ""
-    }
-
-    private fun createRetrofit(serverUrl: String): Retrofit {
+    }    private fun createRetrofit(serverUrl: String): Retrofit {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
-        val client = OkHttpClient.Builder()
+        // Use the unsafe HTTP client that accepts all SSL certificates
+        val client = UnsafeOkHttpClient.getUnsafeOkHttpClient()
+            .newBuilder()
             .addInterceptor(logging)
             .build()
 
@@ -158,29 +159,46 @@ class JellyfinRepository @Inject constructor(
             Log.e("JellyfinRepository", "Unexpected error loading full library items: ${e.message}")
             emit(emptyList())
         }
-    }
-
-    fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
+    }    fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
         try {
             val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
 
-            Log.d("JellyfinRepository", "Getting featured items with token: ${accessToken.take(10)}...")
-            val response = api.getItems(
+            Log.d("JellyfinRepository", "Getting latest items from server with token: ${accessToken.take(10)}...")
+            val latestItems = api.getLatestItems(
                 userId = userId,
-                parentId = null,
-                sortBy = "DateCreated",
-                sortOrder = "Descending",
                 limit = 10,
-                includeItemTypes = "Movie,Series,Episode",
                 authToken = accessToken
             )
-            emit(response.Items)
+            
+            // Filter to only include items with good backdrop images for the carousel
+            val filteredItems = latestItems.filter { item ->
+                item.Type in listOf("Movie", "Series", "Episode") && 
+                !item.getImageUrl(serverUrl).isNullOrEmpty()
+            }
+            
+            emit(filteredItems)
         } catch (e: HttpException) {
-            Log.e("JellyfinRepository", "Failed to load featured items: ${e.code()} ${e.message()}")
-            emit(emptyList())
+            Log.e("JellyfinRepository", "Failed to load latest items: ${e.code()} ${e.message()}")
+            // Fallback to regular items query
+            try {
+                val api = createRetrofit(serverUrl).create(JellyfinApiService::class.java)
+                val response = api.getItems(
+                    userId = userId,
+                    parentId = null,
+                    sortBy = "DateCreated",
+                    sortOrder = "Descending",
+                    limit = 10,
+                    includeItemTypes = "Movie,Series,Episode",
+                    authToken = accessToken
+                )
+                emit(response.Items.filter { !it.getImageUrl(serverUrl).isNullOrEmpty() })
+            } catch (fallbackError: Exception) {
+                Log.e("JellyfinRepository", "Fallback featured items failed: ${fallbackError.message}")
+                emit(emptyList())
+            }
         } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Unexpected error loading featured items: ${e.message}")
+            Log.e("JellyfinRepository", "Unexpected error loading latest items: ${e.message}")
             emit(emptyList())
         }
     }

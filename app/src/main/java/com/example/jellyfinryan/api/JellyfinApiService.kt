@@ -39,9 +39,7 @@ interface JellyfinApiService {
     suspend fun getUserViews(
         @Path("userId") userId: String,
         @Header("X-Emby-Token") authToken: String
-    ): UserViewsResponse
-
-    @GET("Users/{userId}/Items")
+    ): UserViewsResponse    @GET("Users/{userId}/Items")
     suspend fun getItems(
         @Path("userId") userId: String,
         @Query("ParentId") parentId: String? = null,
@@ -51,6 +49,16 @@ interface JellyfinApiService {
         @Query("IncludeItemTypes") includeItemTypes: String? = null,
         @Header("X-Emby-Token") authToken: String
     ): LibraryItemsResponse
+
+    @GET("Users/{userId}/Items/Latest")
+    suspend fun getLatestItems(
+        @Path("userId") userId: String,
+        @Query("Limit") limit: Int = 10,
+        @Query("Fields") fields: String = "BasicSyncInfo,CanDelete,PrimaryImageAspectRatio,Overview",
+        @Query("ImageTypeLimit") imageTypeLimit: Int = 1,
+        @Query("EnableImageTypes") enableImageTypes: String = "Primary,Backdrop,Thumb",
+        @Header("X-Emby-Token") authToken: String
+    ): List<JellyfinItem>
 
     @GET("Shows/{showId}/Seasons")
     suspend fun getSeasons(

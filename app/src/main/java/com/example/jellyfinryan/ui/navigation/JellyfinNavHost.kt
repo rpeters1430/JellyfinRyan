@@ -29,8 +29,7 @@ sealed class Screen(val route: String) {
 fun JellyfinNavHost(
     navController: NavHostController,
     startDestination: String
-) {
-    NavHost(navController = navController, startDestination = startDestination) {
+) {    NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -61,14 +60,25 @@ fun JellyfinNavHost(
             )
         }
 
-        composable(Screen.ShowDetail.route) { backStackEntry ->
+        composable(Screen.Detail.route) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
             ShowDetailScreen(
                 showId = itemId,
                 onSeasonClick = { seasonId ->
                     navController.navigate("episodes/$seasonId")
                 },
-                onBackClick = { navController.popBackStack() } // <-- Here we pass the onBackClick
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.ShowDetail.route) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("ItemId") ?: ""
+            ShowDetailScreen(
+                showId = itemId,
+                onSeasonClick = { seasonId ->
+                    navController.navigate("episodes/$seasonId")
+                },
+                onBackClick = { navController.popBackStack() }
             )
         }
 

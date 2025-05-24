@@ -52,12 +52,11 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    fun loadFeatured() {
+    }    private fun loadFeatured() {
         viewModelScope.launch {
-            repository.getFeaturedItems().collect {
-                _featured.value = it
+            // Use the repository's getFeaturedItems method for better content
+            repository.getFeaturedItems().collect { featuredItems ->
+                _featured.value = featuredItems.take(8) // Limit to 8 for TV carousel
             }
         }
     }

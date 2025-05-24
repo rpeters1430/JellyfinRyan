@@ -16,25 +16,28 @@ fun LibraryRow(
     items: List<JellyfinItem>,
     onItemClick: (String) -> Unit,
     serverUrl: String,
+    onItemFocus: (JellyfinItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(modifier.padding(bottom = 24.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(start = 16.dp, bottom = 12.dp)
+            color = androidx.compose.ui.graphics.Color.White,
+            modifier = Modifier.padding(start = 48.dp, bottom = 12.dp)
         )
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 48.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             items(items) { item ->
                 MediaCard(
                     item = item,
                     serverUrl = serverUrl,
-                    onClick = { onItemClick(item.Id) }
+                    onClick = { onItemClick(item.Id) },
+                    onFocus = { onItemFocus(item) }
                 )
             }
         }

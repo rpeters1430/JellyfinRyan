@@ -23,6 +23,7 @@ fun MediaCard(
     item: JellyfinItem,
     serverUrl: String,
     onClick: () -> Unit,
+    onFocus: (JellyfinItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -34,7 +35,12 @@ fun MediaCard(
             .height(260.dp)
             .scale(if (isFocused) 1.1f else 1f)
             .focusable()
-            .onFocusChanged { isFocused = it.isFocused },
+            .onFocusChanged { focusState -> 
+                isFocused = focusState.isFocused
+                if (focusState.isFocused) {
+                    onFocus(item)
+                }
+            },
         shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
     ) {
         Column {

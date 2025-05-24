@@ -22,11 +22,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.Button
-import androidx.tv.material3.CircularProgressIndicator
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedTextField
 import androidx.tv.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -69,11 +69,11 @@ fun LoginScreen(
         item {
             OutlinedTextField(
                 value = serverUrl,
-                onValueChange = {
-                    serverUrl = it
+                onValueChange = { value ->
+                    serverUrl = value
                     errorMessage = null
                 },
-                label = { Text("Server URL") },
+                label = { Text("Server Url") },
                 placeholder = { Text("https://your-jellyfin-server.com") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 singleLine = true,
@@ -84,8 +84,8 @@ fun LoginScreen(
         item {
             OutlinedTextField(
                 value = username,
-                onValueChange = {
-                    username = it
+                onValueChange = { value ->
+                    username = value
                     errorMessage = null
                 },
                 label = { Text("Username") },
@@ -98,8 +98,8 @@ fun LoginScreen(
         item {
             OutlinedTextField(
                 value = password,
-                onValueChange = {
-                    password = it
+                onValueChange = { value ->
+                    password = value
                     errorMessage = null
                 },
                 label = { Text("Password") },
