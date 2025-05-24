@@ -10,9 +10,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,15 +25,17 @@ import androidx.tv.material3.Card
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.ShowDetailViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun ShowDetailScreen(
     showId: String,
     onSeasonClick: (String) -> Unit,
-    onBackClick: () -> Unit, // <-- Include the onBackClick parameter
+    onBackClick: () -> Unit,
     viewModel: ShowDetailViewModel = hiltViewModel()
 ) {
     val seasons by viewModel.seasons.collectAsState()
@@ -46,46 +45,62 @@ fun ShowDetailScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        CenterAlignedTopAppBar(
-            navigationIcon = {
-                IconButton(onClick = { onBackClick() }) { // <-- Use the onBackClick callback
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-            },
-            title = {
-                Text(text = "Seasons", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-            }
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(seasons) { season ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+        // Use TV-specific top bar implementation
+        androidx.tv.material3.Surface(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column {
+                // Custom header with TV components
+                androidx.tv.material3.Surface(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    Card(
-                        onClick = { onSeasonClick(season.Id) },
-                        modifier = Modifier
-                            .width(160.dp)
-                            .height(240.dp)
-                            .clip(MaterialTheme.shapes.large)
+                    androidx.compose.foundation.layout.Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AsyncImage(
-                            model = season.getImageUrl(viewModel.getServerUrl()),
-                            contentDescription = season.Name,
-                            modifier = Modifier.fillMaxSize()
+                        IconButton(onClick = { onBackClick() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = androidx.compose.ui.graphics.Color.White
+                            )
+                        }
+                        Text(
+                            text = "Seasons", 
+                            style = MaterialTheme.typography.headlineSmall, 
+                            color = androidx.compose.ui.graphics.Color.White,
+                            modifier = Modifier.padding(start = 16.dp)
                         )
                     }
-                    Text(
-                        text = season.Name,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .width(160.dp)
-                    )
+                }
+                
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(seasons) { season ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Card(
+                                onClick = { onSeasonClick(season.Id) },
+                                modifier = Modifier
+                                    .width(160.dp)
+                                    .height(240.dp)
+                                    .clip(MaterialTheme.shapes.large)
+                            ) {
+                                AsyncImage(
+                                    model = season.getImageUrl(viewModel.getServerUrl()),
+                                    contentDescription = season.Name,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Text(
+                                text = season.Name,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .width(160.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

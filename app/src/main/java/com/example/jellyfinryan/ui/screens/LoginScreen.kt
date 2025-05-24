@@ -8,10 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,11 +21,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.tv.material3.Button
+import androidx.tv.material3.CircularProgressIndicator
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.OutlinedTextField
+import androidx.tv.material3.Text
 import com.example.jellyfinryan.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import androidx.tv.material3.Text as TvText
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -59,7 +59,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
-            TvText(
+            Text(
                 text = "Jellyfin Login",
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(bottom = 32.dp)
@@ -73,8 +73,8 @@ fun LoginScreen(
                     serverUrl = it
                     errorMessage = null
                 },
-                label = { TvText("Server URL") },
-                placeholder = { TvText("https://your-jellyfin-server.com") },
+                label = { Text("Server URL") },
+                placeholder = { Text("https://your-jellyfin-server.com") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 singleLine = true,
                 isError = errorMessage != null
@@ -88,7 +88,7 @@ fun LoginScreen(
                     username = it
                     errorMessage = null
                 },
-                label = { TvText("Username") },
+                label = { Text("Username") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 singleLine = true,
                 isError = errorMessage != null
@@ -102,7 +102,7 @@ fun LoginScreen(
                     password = it
                     errorMessage = null
                 },
-                label = { TvText("Password") },
+                label = { Text("Password") },
                 modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f),
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
@@ -112,7 +112,7 @@ fun LoginScreen(
 
         errorMessage?.let { message ->
             item {
-                TvText(
+                Text(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -149,7 +149,7 @@ fun LoginScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                TvText(if (isLoading) "Connecting..." else "Connect")
+                Text(if (isLoading) "Connecting..." else "Connect")
             }
         }
     }

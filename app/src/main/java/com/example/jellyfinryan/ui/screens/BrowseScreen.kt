@@ -16,11 +16,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,10 +35,13 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import androidx.tv.material3.Button
+import androidx.tv.material3.Surface
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.BrowseViewModel
 
-@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun BrowseScreen(
     libraryId: String,
@@ -59,35 +57,42 @@ fun BrowseScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CenterAlignedTopAppBar(
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant, // Or .surface or .primary if you prefer
-                navigationIconContentColor = Color.White,
-                titleContentColor = Color.White,
-                actionIconContentColor = Color.White
-            ),
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+        // Custom TV-friendly header
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Text(
+                        text = "Browsing Library",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(start = 16.dp)
                     )
                 }
-            },
-            title = {
-                Text(
-                    text = "Browsing Library",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            },
-            actions = {
-                TextButton(onClick = { scrollHorizontally = !scrollHorizontally }) {
+
+                Button(onClick = { scrollHorizontally = !scrollHorizontally }) {
                     Text(
                         text = if (scrollHorizontally) "Vertical View" else "Horizontal View"
                     )
                 }
             }
-        )
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
         if (scrollHorizontally) {

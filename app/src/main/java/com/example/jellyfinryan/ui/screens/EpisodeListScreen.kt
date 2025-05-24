@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -16,9 +15,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.AsyncImage
 import com.example.jellyfinryan.viewmodel.EpisodeListViewModel
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun EpisodeListScreen(
     seasonId: String,

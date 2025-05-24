@@ -35,7 +35,7 @@ fun MediaCard(
             .scale(if (isFocused) 1.1f else 1f)
             .focusable()
             .onFocusChanged { isFocused = it.isFocused },
-        shape = RoundedCornerShape(12.dp),
+        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
     ) {
         Column {
             Box(
