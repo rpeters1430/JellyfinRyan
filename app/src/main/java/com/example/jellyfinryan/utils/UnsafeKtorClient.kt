@@ -57,6 +57,11 @@ object UnsafeKtorClient {
                         retryOnConnectionFailure(true)
                         followRedirects(true)
                         followSslRedirects(true)
+
+                        // Configure timeouts at OkHttp level instead of Ktor level
+                        connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                        readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                        writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                     }
                 }
 
@@ -72,12 +77,8 @@ object UnsafeKtorClient {
                     headers.append("Content-Type", "application/json")
                 }
 
-                // Configure HTTP timeout settings
-                install(HttpTimeout) {
-                    requestTimeoutMillis = 30000
-                    connectTimeoutMillis = 15000
-                    socketTimeoutMillis = 30000
-                }
+                // NOTE: HttpTimeout removed due to compatibility issues
+                // Timeouts are configured at OkHttp level above
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create unsafe Ktor client - falling back to basic client", e)
