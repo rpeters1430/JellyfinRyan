@@ -80,10 +80,7 @@ class EnhancedJellyfinSdkService @Inject constructor(
                         
                         chain.proceed(requestWithHeaders)
                     }
-                    .build()                  // Create unsafe Ktor client for Jellyfin SDK
-                val unsafeKtorClient = UnsafeKtorClient.createUnsafeKtorClient()
-                
-                // Initialize Jellyfin SDK with SSL bypass
+                    .build()                // Initialize Jellyfin SDK (SSL bypass will be handled by the API client)
                 jellyfin = Jellyfin(
                     JellyfinOptions.Builder().apply {
                         clientInfo = ClientInfo(
@@ -91,8 +88,6 @@ class EnhancedJellyfinSdkService @Inject constructor(
                             version = "1.0"
                         )
                         context = this@EnhancedJellyfinSdkService.context
-                        // Use our unsafe Ktor client for SSL bypass
-                        httpClient = unsafeKtorClient
                     }.build()
                 )
                 
