@@ -216,6 +216,30 @@ data class JellyfinItem(
                 ThumbImageTags?.isNotEmpty() == true ||
                 ParentPrimaryImageTag != null
     }
+
+    // Specifically for horizontal cards like in "Recently Added" sections (non-episodes)
+    fun getHorizontalCardImageUrl(serverUrl: String?): String? {
+        serverUrl ?: return null
+        // Prefer Backdrop for wider aspect ratio, then Thumb, then Primary.
+        val tag = ImageTags?.get("Backdrop") ?: ImageTags?.get("Thumb") ?: ImageTags?.get("Primary")
+        val imageType = if (ImageTags?.get("Backdrop") != null) "Backdrop" 
+                        else if (ImageTags?.get("Thumb") != null) "Thumb" 
+                        else "Primary"
+        
+        return tag?.let { "$serverUrl/Items/$Id/Images/$imageType?tag=$it&maxWidth=560&quality=96" } // Adjusted for 16:9 cards
+    }
+
+    // Specifically for vertical cards (e.g. library posters, or episode posters if desired)
+    fun getVerticalCardImageUrl(serverUrl: String?): String? {
+        serverUrl ?: return null
+        // Prefer Primary for poster aspect ratio, then Thumb.
+        val tag = ImageTags?.get("Primary") ?: ImageTags?.get("Thumb") ?: ImageTags?.get("Backdrop") // Fallback to backdrop if others missing
+        val imageType = if (ImageTags?.get("Primary") != null) "Primary" 
+                        else if (ImageTags?.get("Thumb") != null) "Thumb" 
+                        else "Backdrop"
+
+        return tag?.let { "$serverUrl/Items/$Id/Images/$imageType?tag=$it&maxWidth=400&quality=96" }
+    }
 }
 
 // Keep existing JellyfinLibrary data class

@@ -2,15 +2,17 @@ package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -19,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
@@ -28,6 +31,7 @@ import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import com.example.jellyfinryan.ui.components.MyLibrariesSection
 import com.example.jellyfinryan.ui.components.RecentlyAddedSection
 import com.example.jellyfinryan.viewmodel.HomeViewModel
+import com.example.jellyfinryan.ui.theme.focusCard
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -37,182 +41,225 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val libraries by viewModel.libraries.collectAsState()
-    val libraryItems by viewModel.libraryItems.collectAsState()
     val recentlyAddedItems by viewModel.recentlyAddedItems.collectAsState()
-    val featured by viewModel.featured.collectAsState()
+    val featuredItems by viewModel.featured.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val serverUrl = viewModel.getServerUrl()
+    
+    val recentTvEpisodes: List<JellyfinItem> by viewModel.recentTvEpisodes.collectAsState()
 
     var backgroundImageUrl by remember { mutableStateOf<String?>(null) }
 
-    // FIXED: Use Box with proper layering instead of overlay background
     Box(modifier = Modifier.fillMaxSize()) {
-        // Static background (lower z-index)
         backgroundImageUrl?.let { imageUrl ->
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .zIndex(0f), // Ensure background stays behind
+                    .zIndex(-1f), // Ensure background is behind content
                 contentScale = ContentScale.Crop,
-                alpha = 0.2f // Reduced opacity so it doesn't interfere
             )
-
-            // Lighter scrim overlay for better readability
+            // Dimming overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .zIndex(1f)
+                    .background(Color.Black.copy(alpha = 0.5f)) // Adjust alpha for desired dimness
+                    .zIndex(-0.5f)
+            )
+        }
+
+        if (isLoading && featuredItems.isEmpty() && recentTvEpisodes.isEmpty() && recentlyAddedItems.isEmpty()) { 
+            Box(modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 48.dp, end = 48.dp, top = 24.dp, bottom = 24.dp)
+            ) {
+                // Featured Carousel
+                if (featuredItems.isNotEmpty()) {
+                    item {
+                        FeaturedCarousel(
+                            featuredItems = featuredItems,
+                            serverUrl = serverUrl,
+                            onItemFocus = { item -> backgroundImageUrl = item.getBackdropUrl(serverUrl) },
+                            onItemClick = onItemClick,
+                            modifier = Modifier.height(400.dp) 
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
+                // Recent TV Episodes Section
+                if (recentTvEpisodes.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Recent TV Episodes",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = Color.White),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            items(recentTvEpisodes) { item ->
+                                RecentItemCard(
+                                    item = item,
+                                    serverUrl = serverUrl,
+                                    onItemClick = onItemClick,
+                                    onFocus = { focusedItem -> backgroundImageUrl = focusedItem.getBackdropUrl(serverUrl) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
+                // My Libraries Section
+                if (libraries.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "My Libraries",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = Color.White),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        MyLibrariesSection(
+                            libraries = libraries,
+                            serverUrl = serverUrl,
+                            onLibraryClick = onBrowseLibrary,
+                            onLibraryFocus = { item -> backgroundImageUrl = item.getBackdropUrl(serverUrl) }
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
+                // Recently Added Sections per Library Type
+                recentlyAddedItems.entries.sortedBy { it.key }.forEach { (libraryType, items) ->
+                    if (items.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Recently Added ${libraryType.capitalizeDesc()}",
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = Color.White),
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            RecentlyAddedSection(
+                                title = "Recently Added ${libraryType.capitalizeDesc()}",
+                                items = items,
+                                serverUrl = serverUrl,
+                                onItemClick = onItemClick,
+                                onItemFocus = { item -> backgroundImageUrl = item.getBackdropUrl(serverUrl) }
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        errorMessage?.let {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .wrapContentSize(Alignment.Center)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = it,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    Button(onClick = { viewModel.clearErrorMessage() }) {
+                        Text("Dismiss")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun RecentItemCard(
+    item: JellyfinItem,
+    serverUrl: String?,
+    onItemClick: (String) -> Unit,
+    onFocus: (JellyfinItem) -> Unit
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    val itemScale = if (isFocused) 1.1f else 1f
+    val border = if (isFocused) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(0.dp, Color.Transparent)
+
+    Card(
+        onClick = { onItemClick(item.id) },
+        modifier = Modifier
+            .width(200.dp) 
+            .height(280.dp) 
+            .scale(itemScale) 
+            .onFocusChanged {
+                isFocused = it.isFocused
+                if (it.isFocused) {
+                    onFocus(item)
+                }
+            }
+            .focusCard() 
+            .border(border, RoundedCornerShape(8.dp))
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AsyncImage(
+                model = item.getVerticalCardImageUrl(serverUrl) 
+                        ?: item.getPrimaryImageUrl(serverUrl, предпочтениеВертикальному = true) 
+                        ?: item.getBackdropUrl(serverUrl), 
+                contentDescription = item.name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.6f),
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.6f)
-                            )
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            startY = 0.5f 
                         )
                     )
             )
-        }
-
-        // Loading state
-        if (isLoading) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .zIndex(2f),
-                contentAlignment = Alignment.Center
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.Bottom
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                Text(
+                    text = item.name ?: "Unknown Title",
+                    style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                item.seriesName?.let {
                     Text(
-                        text = "Loading your media...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.8f)),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
-            return@Box
-        }
-
-        // Error state
-        errorMessage?.let { error ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .zIndex(2f),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(48.dp)
-                ) {
-                    Text(
-                        text = "⚠️ Connection Error",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White
-                    )
-                    Text(
-                        text = error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center
-                    )
-                    Button(
-                        onClick = { viewModel.clearError() }
-                    ) {
-                        Text("Retry")
-                    }
-                }
-            }
-            return@Box
-        }
-
-        // FIXED: Main content with proper z-index layering
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(2f), // Content above background
-            verticalArrangement = Arrangement.spacedBy(24.dp), // Reduced spacing
-            contentPadding = PaddingValues(vertical = 0.dp) // FIXED: Remove top padding so carousel goes to top
-        ) {
-            // FIXED: Featured Carousel Section - Full width, goes to top of screen
-            if (featured.isNotEmpty()) {
-                item {
-                    FeaturedCarousel(
-                        featuredItems = featured,
-                        serverUrl = serverUrl,
-                        onItemClick = onItemClick,
-                        onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(600.dp), // Fixed height for carousel
-                        sdkRepository = null
-                    )
-                }
-            }
-
-            // My Libraries Section - Horizontal cards
-            if (libraries.isNotEmpty()) {
-                item {
-                    MyLibrariesSection(
-                        libraries = libraries,
-                        serverUrl = serverUrl,
-                        onLibraryClick = onBrowseLibrary,
-                        onLibraryFocus = { library ->
-                            backgroundImageUrl = library.getImageUrl(serverUrl)
-                        },
-                        sdkRepository = null
-                    )
-                }
-            }
-            // FIXED: Recently Added Sections for each library - should now show correct recent items
-            items(libraries) { library ->
-                val recentItems = recentlyAddedItems[library.Id] ?: emptyList()
-
-                if (recentItems.isNotEmpty()) {
-                    // Determine section title based on library name and content type
-                    val sectionTitle = when {
-                        library.Name.contains("TV", ignoreCase = true) ||
-                                library.Name.contains("Show", ignoreCase = true) ||
-                                library.Name.contains("Series", ignoreCase = true) ->
-                            "Recently Added Episodes" // For TV libraries showing episodes
-
-                        library.Name.contains("Movie", ignoreCase = true) ->
-                            "Recently Added Movies" // For movie libraries
-
-                        library.Name.contains("Music", ignoreCase = true) ->
-                            "Recently Added Music" // For music libraries
-
-                        else -> "Recently Added in ${library.Name}" // Fallback with library name
-                    }
-
-                    RecentlyAddedSection(
-                        title = sectionTitle,
-                        items = recentItems.take(15), // Show up to 15 items
-                        serverUrl = serverUrl,
-                        onItemClick = onItemClick,
-                        onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl)
-                        },
-                        sdkRepository = null
-                    )
-                }
-            }
-            // Add some bottom padding for TV navigation
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
             }
         }
+    }
+}
+
+fun String.capitalizeDesc(): String {
+    return when (this.lowercase()) {
+        "movie" -> "Movies"
+        "tvshows" -> "TV Shows" 
+        "tvshow" -> "TV Shows"
+        "music" -> "Music"
+        "book" -> "Books"
+        "photo" -> "Photos"
+        "episode" -> "Episodes"
+        else -> this.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }.plus("s") 
     }
 }
