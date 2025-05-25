@@ -1,6 +1,7 @@
 package com.example.jellyfinryan.ui.theme
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -16,16 +17,55 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * Modifier extension for creating focusable cards with TV-style focus behavior
+ * Provides scaling and visual feedback for Android TV navigation
+ */
 fun Modifier.focusCard(): Modifier = composed {
     var isFocused by remember { mutableStateOf(false) }
-    val scale = if (isFocused) 1.1f else 1f
-    // val border = if (isFocused) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(0.dp, Color.Transparent)
-    // Border is handled by the Card itself in HomeScreen usually
+    val scale = if (isFocused) 1.05f else 1f
 
     this
         .scale(scale)
         .onFocusChanged { focusState ->
             isFocused = focusState.isFocused
         }
-        // .border(border, RoundedCornerShape(8.dp)) // Apply border within the composed modifier if always desired
+}
+
+/**
+ * Enhanced focusCard with custom scale factor
+ */
+fun Modifier.focusCard(scaleWhenFocused: Float = 1.05f): Modifier = composed {
+    var isFocused by remember { mutableStateOf(false) }
+    val scale = if (isFocused) scaleWhenFocused else 1f
+
+    this
+        .scale(scale)
+        .onFocusChanged { focusState ->
+            isFocused = focusState.isFocused
+        }
+}
+
+/**
+ * Focus card with border highlight for extra visual feedback
+ */
+fun Modifier.focusCardWithBorder(
+    scaleWhenFocused: Float = 1.05f,
+    borderWidth: androidx.compose.ui.unit.Dp = 2.dp,
+    cornerRadius: androidx.compose.ui.unit.Dp = 8.dp
+): Modifier = composed {
+    var isFocused by remember { mutableStateOf(false) }
+    val scale = if (isFocused) scaleWhenFocused else 1f
+    val borderStroke = if (isFocused) {
+        BorderStroke(borderWidth, MaterialTheme.colorScheme.primary)
+    } else {
+        BorderStroke(0.dp, Color.Transparent)
+    }
+
+    this
+        .scale(scale)
+        .border(borderStroke, RoundedCornerShape(cornerRadius))
+        .onFocusChanged { focusState ->
+            isFocused = focusState.isFocused
+        }
 }

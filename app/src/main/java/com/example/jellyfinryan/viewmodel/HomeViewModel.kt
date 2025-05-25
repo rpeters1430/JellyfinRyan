@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: JellyfinRepository,  // Using original working repository with SSL bypass
+    private val repository: JellyfinRepository,
     private val dataStoreManager: DataStoreManager
 ) : ViewModel() {
 
@@ -31,6 +31,9 @@ class HomeViewModel @Inject constructor(
     private val _featured = MutableStateFlow<List<JellyfinItem>>(emptyList())
     val featured: StateFlow<List<JellyfinItem>> = _featured.asStateFlow()
 
+    private val _recentTvEpisodes = MutableStateFlow<List<JellyfinItem>>(emptyList())
+    val recentTvEpisodes: StateFlow<List<JellyfinItem>> = _recentTvEpisodes.asStateFlow()
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -38,92 +41,131 @@ class HomeViewModel @Inject constructor(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     init {
-        // Start loading data immediately using the working SSL bypass repository
         loadData()
     }
 
     /**
-     * Load data using the original working repository (which has SSL bypass via UnsafeOkHttpClient)
+     * Load all data with proper sequencing to avoid data mixing
      */
     private fun loadData() {
         viewModelScope.launch {
             try {
-                android.util.Log.d(
-                    "HomeViewModel",
-                    "🧪 SSL BYPASS TEST: Loading data with original repository..."
-                )
+                android.util.Log.d("HomeViewModel", "🚀 Starting data load sequence...")
 
-                // Test 1: Load libraries (user views)
-                repository.getUserViews().collect { views ->
-                    android.util.Log.d(
-                        "HomeViewModel",
-                        "✅ SSL BYPASS SUCCESS: Loaded ${views.size} libraries"
-                    )
-                    _libraries.value = views
-                    _errorMessage.value = null
+                // ✅ STEP 1: Load libraries first
+                loadLibraries()
 
-                    // Load data for each library
-                    views.forEach { library ->
-                        loadLibraryData(library)
-                    }
+                // ✅ STEP 2: Load featured movies (MOVIES ONLY)
+                loadFeaturedMovies()
 
-                    if (views.isNotEmpty()) {
-                        _isLoading.value = false
-                    }
-                }
-                // Test 2: Load featured content
-                repository.getFeaturedMovies().collect { movies ->
-                    android.util.Log.d("HomeViewModel", "✅ Featured movies loaded - ${movies.size} movies")
-                    _featured.value = movies // This will be the last 3 movies
-                }
+                // ✅ STEP 3: Load recent TV episodes
+                loadRecentTvEpisodes()
+
             } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "❌ SSL BYPASS FAILED: ${e.message}", e)
+                android.util.Log.e("HomeViewModel", "❌ Data loading failed: ${e.message}", e)
                 _errorMessage.value = "Failed to load data: ${e.message}"
                 _isLoading.value = false
             }
         }
     }
+
     /**
-     * Load items and recently added content for a specific library
+     * Load libraries and their recently added items
      */
-    private fun loadLibraryData(library: JellyfinItem) {
-        viewModelScope.launch {
-            try {
-                // Load library items
-                repository.getLibraryItems(library.Id).collect { items ->
-                    _libraryItems.update { current ->
-                        current + (library.Id to items)
-                    }
-                    android.util.Log.d(
-                        "HomeViewModel",
-                        "✅ Loaded ${items.size} items for library: ${library.Name}"
-                    )
+    private suspend fun loadLibraries() {
+        try {
+            repository.getUserViews().collect { views ->
+                android.util.Log.d("HomeViewModel", "✅ Loaded ${views.size} libraries")
+                _libraries.value = views
+                _errorMessage.value = null
+
+                // Load recently added items for each library
+                views.forEach { library ->
+                    loadLibraryRecentItems(library)
                 }
 
-                // Load recently added items for this library
-                repository.getRecentlyAddedForLibrary(library.Id).collect { recentItems ->
-                    _recentlyAddedItems.update { current ->
-                        current + (library.Id to recentItems)
-                    }
-                    android.util.Log.d(
-                        "HomeViewModel",
-                        "✅ Loaded ${recentItems.size} recently added items for: ${library.Name}"
-                    )
+                if (views.isNotEmpty()) {
+                    _isLoading.value = false
                 }
-            } catch (e: Exception) {
-                android.util.Log.e(
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Failed to load libraries: ${e.message}")
+            throw e
+        }
+    }
+
+    /**
+     * ✅ FIXED: Load featured movies ONLY (not libraries)
+     */
+    private suspend fun loadFeaturedMovies() {
+        try {
+            android.util.Log.d("HomeViewModel", "🎬 Loading featured movies...")
+
+            repository.getFeaturedMovies().collect { movies ->
+                // ✅ DOUBLE CHECK: Ensure we only get movies
+                val movieItems = movies.filter { it.Type == "Movie" }
+                android.util.Log.d("HomeViewModel", "✅ Featured movies loaded - ${movieItems.size} movies")
+
+                // Log each movie for debugging
+                movieItems.forEachIndexed { index, movie ->
+                    android.util.Log.d("HomeViewModel", "Featured Movie $index: ${movie.Name} (Type: ${movie.Type})")
+                }
+
+                _featured.value = movieItems.take(4) // Only take 4 movies max
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Failed to load featured movies: ${e.message}")
+            // Don't throw - featured is optional
+        }
+    }
+
+    /**
+     * Load recent TV episodes from all libraries
+     */
+    private suspend fun loadRecentTvEpisodes() {
+        try {
+            android.util.Log.d("HomeViewModel", "📺 Loading recent TV episodes...")
+
+            repository.getRecentTvEpisodes().collect { episodes ->
+                android.util.Log.d("HomeViewModel", "✅ Loaded ${episodes.size} recent TV episodes")
+                _recentTvEpisodes.value = episodes.take(10) // Max 10 episodes
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Failed to load recent TV episodes: ${e.message}")
+            // Don't throw - episodes are optional
+        }
+    }
+
+    /**
+     * Load recently added items for a specific library
+     */
+    private suspend fun loadLibraryRecentItems(library: JellyfinItem) {
+        try {
+            repository.getRecentlyAddedForLibrary(library.Id).collect { recentItems ->
+                _recentlyAddedItems.update { current ->
+                    current + (library.Id to recentItems.take(15)) // Max 15 per library
+                }
+                android.util.Log.d(
                     "HomeViewModel",
-                    "Failed to load data for library ${library.Name}: ${e.message}"
+                    "✅ Loaded ${recentItems.size} recently added items for: ${library.Name}"
                 )
             }
+        } catch (e: Exception) {
+            android.util.Log.e(
+                "HomeViewModel",
+                "Failed to load recent items for library ${library.Name}: ${e.message}"
+            )
         }
     }
 
     fun clearError() {
         _errorMessage.value = null
-        // Retry loading data
         _isLoading.value = true
         loadData()
+    }
+
+    fun clearErrorMessage() {
+        clearError()
     }
 
     fun getServerUrl(): String {
@@ -131,88 +173,38 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * Test SSL bypass manually (for debugging)
+     * Get library by ID for display purposes
      */
-    fun testSslBypassManual() {
-        viewModelScope.launch {
-            android.util.Log.d("SSL_TEST", "🧪 Manual SSL bypass test started...")
-            try {
-                // Test basic connectivity
-                repository.getUserViews().collect { views ->
-                    android.util.Log.d(
-                        "SSL_TEST",
-                        "✅ Manual test successful: ${views.size} libraries loaded"
-                    )
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SSL_TEST", "❌ Manual SSL test failed", e)
-            }
-        }
+    fun getLibraryById(libraryId: String): JellyfinItem? {
+        return _libraries.value.find { it.Id == libraryId }
     }
 
     /**
-     * Test image URL generation for debugging (remove after fixing)
+     * Debug method to check data integrity
      */
-    fun testImageUrls() {
+    fun debugDataIntegrity() {
         viewModelScope.launch {
-            android.util.Log.d("IMAGE_TEST", "🧪 Testing image URL generation...")
+            android.util.Log.d("HomeViewModel", "=== DATA INTEGRITY CHECK ===")
 
-            // Test with featured items
             val currentFeatured = _featured.value
-            android.util.Log.d("IMAGE_TEST", "Found ${currentFeatured.size} featured items")
-
-            currentFeatured.take(3).forEach { item ->
-                android.util.Log.d("IMAGE_TEST", "--- Testing item: ${item.Name} ---")
-                android.util.Log.d("IMAGE_TEST", "Type: ${item.Type}")
-                android.util.Log.d("IMAGE_TEST", "PrimaryImageTag: ${item.PrimaryImageTag}")
-                android.util.Log.d("IMAGE_TEST", "BackdropImageTags: ${item.BackdropImageTags}")
-                android.util.Log.d("IMAGE_TEST", "ImageTags: ${item.ImageTags}")
-
-                val serverUrl = getServerUrl()
-                val imageUrl = item.getImageUrl(serverUrl)
-                val horizontalUrl = item.getHorizontalImageUrl(serverUrl)
-                val carouselUrl = item.getFeaturedCarouselImageUrl(serverUrl)
-
-                android.util.Log.d("IMAGE_TEST", "Primary image URL: $imageUrl")
-                android.util.Log.d("IMAGE_TEST", "Horizontal image URL: $horizontalUrl")
-                android.util.Log.d("IMAGE_TEST", "Carousel image URL: $carouselUrl")
-                android.util.Log.d("IMAGE_TEST", "Server URL: $serverUrl")
-                android.util.Log.d("IMAGE_TEST", "--------------------------------")
+            android.util.Log.d("HomeViewModel", "Featured items: ${currentFeatured.size}")
+            currentFeatured.forEach { item ->
+                android.util.Log.d("HomeViewModel", "  - ${item.Name} (${item.Type})")
             }
 
-            // Test with library items
             val currentLibraries = _libraries.value
-            android.util.Log.d("IMAGE_TEST", "Found ${currentLibraries.size} libraries")
-
-            currentLibraries.take(2).forEach { library ->
-                android.util.Log.d("IMAGE_TEST", "--- Testing library: ${library.Name} ---")
-                val libraryItems = _libraryItems.value[library.Id] ?: emptyList()
-                android.util.Log.d("IMAGE_TEST", "Library has ${libraryItems.size} items")
-
-                libraryItems.take(2).forEach { item ->
-                    val imageUrl = item.getImageUrl(getServerUrl())
-                    android.util.Log.d("IMAGE_TEST", "Library item ${item.Name}: $imageUrl")
-                }
+            android.util.Log.d("HomeViewModel", "Libraries: ${currentLibraries.size}")
+            currentLibraries.forEach { library ->
+                android.util.Log.d("HomeViewModel", "  - ${library.Name} (${library.Type})")
             }
 
-            // Test recently added items
-            val recentItems = _recentlyAddedItems.value
-            android.util.Log.d(
-                "IMAGE_TEST",
-                "Found recently added items for ${recentItems.keys.size} libraries"
-            )
-
-            recentItems.forEach { (libraryId, items) ->
-                val libraryName = _libraries.value.find { it.Id == libraryId }?.Name ?: "Unknown"
-                android.util.Log.d(
-                    "IMAGE_TEST",
-                    "--- Recently added in $libraryName (${items.size} items) ---"
-                )
-                items.take(2).forEach { item ->
-                    val horizontalUrl = item.getHorizontalImageUrl(getServerUrl())
-                    android.util.Log.d("IMAGE_TEST", "Recent item ${item.Name}: $horizontalUrl")
-                }
+            val currentEpisodes = _recentTvEpisodes.value
+            android.util.Log.d("HomeViewModel", "Recent episodes: ${currentEpisodes.size}")
+            currentEpisodes.take(3).forEach { episode ->
+                android.util.Log.d("HomeViewModel", "  - ${episode.Name} (${episode.Type}) from ${episode.SeriesName}")
             }
+
+            android.util.Log.d("HomeViewModel", "=== END DATA CHECK ===")
         }
     }
 }

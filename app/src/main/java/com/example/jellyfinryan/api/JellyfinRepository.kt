@@ -31,9 +31,9 @@ class JellyfinRepository @Inject constructor(
     }
 
     fun getServerUrl(): String = serverUrl
-    
+
     fun getUserId(): String = userId
-    
+
     fun getAccessToken(): String = accessToken
 
     suspend fun login(serverUrl: String, username: String, password: String): Result<Boolean> {
@@ -82,7 +82,9 @@ class JellyfinRepository @Inject constructor(
         serverUrl = ""
         userId = ""
         accessToken = ""
-    }    private fun createRetrofit(serverUrl: String): Retrofit {
+    }
+
+    private fun createRetrofit(serverUrl: String): Retrofit {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
@@ -163,7 +165,9 @@ class JellyfinRepository @Inject constructor(
             Log.e("JellyfinRepository", "Unexpected error loading full library items: ${e.message}")
             emit(emptyList())
         }
-    }    fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
+    }
+
+    fun getFeaturedItems(): Flow<List<JellyfinItem>> = flow {
         try {
             val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
@@ -174,13 +178,13 @@ class JellyfinRepository @Inject constructor(
                 limit = 10,
                 authToken = accessToken
             )
-            
+
             // Filter to only include items with good backdrop images for the carousel
             val filteredItems = latestItems.filter { item ->
-                item.Type in listOf("Movie", "Series", "Episode") && 
-                !item.getImageUrl(serverUrl).isNullOrEmpty()
+                item.Type in listOf("Movie", "Series", "Episode") &&
+                        !item.getImageUrl(serverUrl).isNullOrEmpty()
             }
-            
+
             emit(filteredItems)
         } catch (e: HttpException) {
             Log.e("JellyfinRepository", "Failed to load latest items: ${e.code()} ${e.message()}")
@@ -254,7 +258,9 @@ class JellyfinRepository @Inject constructor(
         val deviceId = "android-emulator"
 
         return "MediaBrowser Client=\"$app\", Device=\"$device\", DeviceId=\"$deviceId\", Version=\"$version\""
-    }    fun getRecentlyAddedForLibrary(libraryId: String): Flow<List<JellyfinItem>> = flow {
+    }
+
+    fun getRecentlyAddedForLibrary(libraryId: String): Flow<List<JellyfinItem>> = flow {
         try {
             val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
@@ -288,27 +294,105 @@ class JellyfinRepository @Inject constructor(
             emit(emptyList())
         }
     }
+
     fun getFeaturedMovies(): Flow<List<JellyfinItem>> = flow {
         try {
             val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
 
-            Log.d("JellyfinRepository", "Getting last 3 movies for Featured Carousel")
+            Log.d("JellyfinRepository", "🎬 Getting featured movies with proper filtering...")
 
-            val response = api.getItems(
+            // ✅ FIXED: Use proper API call with explicit Movie filtering
+            val response = api.getItemsWithImages(
                 userId = userId,
                 parentId = null, // Search all libraries
                 sortBy = "DateCreated", // Sort by when added to server
-                sortOrder = "Descending",
-                limit = 3, // Only get last 3 movies
-                includeItemTypes = "Movie", // Only movies for featured carousel
+                sortOrder = "Descending", // Most recent first
+                limit = 8, // Get more to ensure we have enough movies after filtering
+                includeItemTypes = "Movie", // ✅ ONLY MOVIES - This is key!
                 authToken = accessToken
             )
 
-            Log.d("JellyfinRepository", "Featured movies: ${response.Items.size} movies")
-            emit(response.Items)
+            Log.d("JellyfinRepository", "Featured movies API returned ${response.Items.size} items")
+
+            // ✅ DOUBLE CHECK: Filter to ensure only movies with images
+            val movieItems = response.Items.filter { item ->
+                item.Type == "Movie" && !item.getImageUrl(serverUrl).isNullOrEmpty()
+            }
+
+            Log.d("JellyfinRepository", "✅ Filtered to ${movieItems.size} movies with images")
+
+            // Log each movie for debugging
+            movieItems.forEachIndexed { index, movie ->
+                Log.d("JellyfinRepository", "Featured Movie $index: ${movie.Name} (Type: ${movie.Type}) - Image: ${movie.getImageUrl(serverUrl)}")
+            }
+
+            emit(movieItems.take(4)) // Take max 4 movies for featured carousel
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "Failed to load featured movies: ${e.code()} ${e.message()}")
+
+            // ✅ FALLBACK: Try alternative approach if the enhanced API fails
+            try {
+                Log.d("JellyfinRepository", "Trying fallback approach for featured movies...")
+                val api = createRetrofit(serverUrl).create(JellyfinApiService::class.java)
+                val response = api.getItems(
+                    userId = userId,
+                    parentId = null,
+                    sortBy = "DateCreated",
+                    sortOrder = "Descending",
+                    limit = 8,
+                    includeItemTypes = "Movie", // ✅ EXPLICIT MOVIE FILTERING
+                    authToken = accessToken
+                )
+
+                val movieItems = response.Items.filter { item ->
+                    item.Type == "Movie" && !item.getImageUrl(serverUrl).isNullOrEmpty()
+                }
+
+                Log.d("JellyfinRepository", "✅ Fallback got ${movieItems.size} movies")
+                emit(movieItems.take(4))
+            } catch (fallbackError: Exception) {
+                Log.e("JellyfinRepository", "Fallback featured movies also failed: ${fallbackError.message}")
+                emit(emptyList())
+            }
         } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Failed to load featured movies: ${e.message}")
+            Log.e("JellyfinRepository", "Unexpected error loading featured movies: ${e.message}")
+            emit(emptyList())
+        }
+    }
+    // ✅ ADDED: Get recent TV episodes from all libraries
+    fun getRecentTvEpisodes(): Flow<List<JellyfinItem>> = flow {
+        try {
+            val retrofit = createRetrofit(serverUrl)
+            val api = retrofit.create(JellyfinApiService::class.java)
+
+            Log.d("JellyfinRepository", "Getting recent TV episodes with proper API parameters")
+
+            // Use the enhanced API call to get recent episodes with comprehensive image fields
+            val response = api.getItemsWithImages(
+                userId = userId,
+                parentId = null, // Search all libraries
+                sortBy = "DateCreated", // Sort by when episodes were added to server
+                sortOrder = "Descending", // Most recent first
+                limit = 10, // Last 10 episodes
+                includeItemTypes = "Episode", // Only episodes
+                authToken = accessToken
+            )
+
+            Log.d("JellyfinRepository", "Recent TV episodes API returned ${response.Items.size} episodes")
+
+            // Log each episode for debugging
+            response.Items.forEachIndexed { index, episode ->
+                val imageUrl = episode.getHorizontalImageUrl(serverUrl)
+                Log.d("JellyfinRepository", "Episode $index: ${episode.Name} (Series: ${episode.SeriesName}) - Image: $imageUrl")
+            }
+
+            emit(response.Items)
+        } catch (e: HttpException) {
+            Log.e("JellyfinRepository", "Failed to load recent TV episodes: ${e.code()} ${e.message()}")
+            emit(emptyList())
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Unexpected error loading recent TV episodes: ${e.message}")
             emit(emptyList())
         }
     }
