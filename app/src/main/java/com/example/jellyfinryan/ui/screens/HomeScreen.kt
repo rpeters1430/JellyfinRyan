@@ -2,6 +2,7 @@ package com.example.jellyfinryan.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -29,7 +30,6 @@ import coil.compose.AsyncImage
 import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import com.example.jellyfinryan.ui.components.MyLibrariesSection
-import com.example.jellyfinryan.ui.components.RecentlyAddedSection
 import com.example.jellyfinryan.viewmodel.HomeViewModel
 import com.example.jellyfinryan.ui.theme.focusCard
 
@@ -41,13 +41,14 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val libraries by viewModel.libraries.collectAsState()
-    val recentlyAddedItems by viewModel.recentlyAddedItems.collectAsState()
+    val recentlyAddedItemsMap by viewModel.recentlyAddedItems.collectAsState() // Renamed for clarity
     val featuredItems by viewModel.featured.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val serverUrl = viewModel.getServerUrl()
     
-    val recentTvEpisodes: List<JellyfinItem> by viewModel.recentTvEpisodes.collectAsState()
+    // Recent TV Episodes Section
+    val recentTvEpisodes = viewModel.recentTvEpisodes.collectAsState(initial = emptyList()).value
 
     var backgroundImageUrl by remember { mutableStateOf<String?>(null) }
 
@@ -70,7 +71,7 @@ fun HomeScreen(
             )
         }
 
-        if (isLoading && featuredItems.isEmpty() && recentTvEpisodes.isEmpty() && recentlyAddedItems.isEmpty()) { 
+        if (isLoading && featuredItems.isEmpty() && recentTvEpisodes.isEmpty() && recentlyAddedItemsMap.isEmpty()) { 
             Box(modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center)) {
                 CircularProgressIndicator()
             }
@@ -86,7 +87,7 @@ fun HomeScreen(
                         FeaturedCarousel(
                             featuredItems = featuredItems,
                             serverUrl = serverUrl,
-                            onItemFocus = { item -> backgroundImageUrl = item.getBackdropUrl(serverUrl) },
+                            onItemFocus = { item -> backgroundImageUrl = item.getBackdropImageUrl(serverUrl ?: "") }, // Corrected
                             onItemClick = onItemClick,
                             modifier = Modifier.height(400.dp) 
                         )
@@ -103,12 +104,12 @@ fun HomeScreen(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            items(recentTvEpisodes) { item ->
+                            items(recentTvEpisodes) { mediaItem ->
                                 RecentItemCard(
-                                    item = item,
+                                    item = mediaItem,
                                     serverUrl = serverUrl,
                                     onItemClick = onItemClick,
-                                    onFocus = { focusedItem -> backgroundImageUrl = focusedItem.getBackdropUrl(serverUrl) }
+                                    onFocus = { focusedItem -> backgroundImageUrl = focusedItem.getBackdropImageUrl(serverUrl ?: "") }
                                 )
                             }
                         }
@@ -128,14 +129,14 @@ fun HomeScreen(
                             libraries = libraries,
                             serverUrl = serverUrl,
                             onLibraryClick = onBrowseLibrary,
-                            onLibraryFocus = { item -> backgroundImageUrl = item.getBackdropUrl(serverUrl) }
+                            onLibraryFocus = { item -> backgroundImageUrl = item.getBackdropImageUrl(serverUrl ?: "") } // Corrected
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
 
                 // Recently Added Sections per Library Type
-                recentlyAddedItems.entries.sortedBy { it.key }.forEach { (libraryType, items) ->
+                recentlyAddedItemsMap.entries.sortedBy { it.key }.forEach { (libraryType, items) ->
                     if (items.isNotEmpty()) {
                         item {
                             Text(
@@ -143,13 +144,17 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = Color.White),
                                 modifier = Modifier.padding(bottom = 16.dp)
                             )
-                            RecentlyAddedSection(
-                                title = "Recently Added ${libraryType.capitalizeDesc()}",
-                                items = items,
-                                serverUrl = serverUrl,
-                                onItemClick = onItemClick,
-                                onItemFocus = { item -> backgroundImageUrl = item.getBackdropUrl(serverUrl) }
-                            )
+                            // Using a generic LazyRow with RecentItemCard for all recently added sections
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                items(items) { mediaItem ->
+                                    RecentItemCard(
+                                        item = mediaItem,
+                                        serverUrl = serverUrl,
+                                        onItemClick = onItemClick,
+                                        onFocus = { focusedItem -> backgroundImageUrl = focusedItem.getBackdropImageUrl(serverUrl ?: "") } // Corrected
+                                    )
+                                }
+                            }
                             Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
@@ -190,10 +195,10 @@ fun RecentItemCard(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val itemScale = if (isFocused) 1.1f else 1f
-    val border = if (isFocused) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(0.dp, Color.Transparent)
+    val borderStroke = if (isFocused) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(0.dp, Color.Transparent) // Renamed variable
 
     Card(
-        onClick = { onItemClick(item.id) },
+        onClick = { onItemClick(item.Id) }, // Corrected: item.Id
         modifier = Modifier
             .width(200.dp) 
             .height(280.dp) 
@@ -205,14 +210,14 @@ fun RecentItemCard(
                 }
             }
             .focusCard() 
-            .border(border, RoundedCornerShape(8.dp))
+            .border(borderStroke, RoundedCornerShape(8.dp)) // Used renamed variable
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = item.getVerticalCardImageUrl(serverUrl) 
-                        ?: item.getPrimaryImageUrl(serverUrl, предпочтениеВертикальному = true) 
-                        ?: item.getBackdropUrl(serverUrl), 
-                contentDescription = item.name,
+                model = item.getVerticalCardImageUrl(serverUrl ?: "") // Corrected: Added serverUrl
+                        ?: item.getImageUrl(serverUrl ?: "", preferVertical = true) // Corrected: item.getImageUrl, added preferVertical
+                        ?: item.getBackdropImageUrl(serverUrl ?: ""), // Corrected: item.getBackdropImageUrl
+                contentDescription = item.Name, // Corrected: item.Name
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -222,7 +227,7 @@ fun RecentItemCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                            startY = 0.5f 
+                            startY = 0.5f * 280.dp.value // Adjust gradient start based on card height
                         )
                     )
             )
@@ -233,14 +238,14 @@ fun RecentItemCard(
                 verticalArrangement = Arrangement.Bottom
             ) {
                 Text(
-                    text = item.name ?: "Unknown Title",
+                    text = item.Name ?: "Unknown Title", // Corrected: item.Name
                     style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                item.seriesName?.let {
+                item.SeriesName?.let { seriesNameValue -> // Re-enabled SeriesName display
                     Text(
-                        text = it,
+                        text = seriesNameValue,
                         style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.8f)),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

@@ -20,8 +20,9 @@ data class JellyfinSdkItem(
     val communityRating: Float? = baseItem.communityRating?.toFloat()
     val officialRating: String? = baseItem.officialRating
     val runTimeTicks: Long? = baseItem.runTimeTicks
-    val productionYear: Int? = baseItem.productionYear
     val parentId: String? = baseItem.parentId?.toString()
+    val productionYear: Int? = baseItem.productionYear
+    val seriesName: String? = baseItem.seriesName // <-- Add this line
     
     /**
      * Get the primary image URL for vertical cards (posters)
@@ -123,8 +124,8 @@ data class JellyfinSdkItem(
     /**
      * Convert to the old JellyfinItem format for backwards compatibility
      */
-    fun toJellyfinItem(): JellyfinItem {
-        return JellyfinItem(
+    fun toJellyfinItem(): com.example.jellyfinryan.api.model.JellyfinItem {
+        return com.example.jellyfinryan.api.model.JellyfinItem(
             Id = id,
             Name = name,
             Type = type,
@@ -144,7 +145,8 @@ data class JellyfinSdkItem(
             ScreenshotImageTags = null, // Not needed with SDK
             ProductionYear = productionYear,
             ParentThumbImageTag = null, // Not needed with SDK
-            SeriesThumbImageTag = null // Not needed with SDK
+            SeriesThumbImageTag = null, // Not needed with SDK
+            SeriesName = seriesName // <-- Add this line
         )
     }
 }
