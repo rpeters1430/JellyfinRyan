@@ -75,76 +75,76 @@ fun HomeScreen(
                 CircularProgressIndicator()
             }
         } else {            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 48.dp, end = 48.dp, top = 24.dp, bottom = 24.dp)
-            ) {
-                // 1. Featured Carousel - Shows last 3 movies with Play/Info buttons (FIRST)
-                if (featuredItems.isNotEmpty()) {
-                    item {
-                        FeaturedCarousel(
-                            featuredItems = featuredItems,
-                            serverUrl = serverUrl,
-                            onItemFocus = { item ->
-                                backgroundImageUrl = item.getBackdropImageUrl(serverUrl ?: "")
-                            },
-                            onItemClick = onItemClick,
-                            modifier = Modifier.height(400.dp)
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 48.dp, end = 48.dp, top = 24.dp, bottom = 24.dp)
+        ) {
+            // 1. Featured Carousel - Shows last 3 movies with Play/Info buttons (FIRST)
+            if (featuredItems.isNotEmpty()) {
+                item {
+                    FeaturedCarousel(
+                        featuredItems = featuredItems,
+                        serverUrl = serverUrl,
+                        onItemFocus = { item ->
+                            backgroundImageUrl = item.getBackdropImageUrl(serverUrl ?: "")
+                        },
+                        onItemClick = onItemClick,
+                        modifier = Modifier.height(400.dp)
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
+            }
 
-                // 2. My Libraries Section - Horizontal cards for all user libraries (SECOND)
-                if (libraries.isNotEmpty()) {
-                    item {
-                        MyLibrariesSection(
-                            libraries = libraries,
-                            serverUrl = serverUrl,
-                            onLibraryClick = onBrowseLibrary,
-                            onLibraryFocus = { item ->
-                                backgroundImageUrl = item.getBackdropImageUrl(serverUrl ?: "")
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
+            // 2. My Libraries Section - Horizontal cards for all user libraries (SECOND)
+            if (libraries.isNotEmpty()) {
+                item {
+                    MyLibrariesSection(
+                        libraries = libraries,
+                        serverUrl = serverUrl,
+                        onLibraryClick = onBrowseLibrary,
+                        onLibraryFocus = { item ->
+                            backgroundImageUrl = item.getBackdropImageUrl(serverUrl ?: "")
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
+            }
 
-                // 3. Recently Added Sections per Library Type (THIRD)
-                // Filter out any "Episode" type to prevent confusion with "Recent TV Episodes"
-                recentlyAddedItemsMap.entries
-                    .filter { it.key.lowercase() != "episode" } // Prevent episode confusion
-                    .sortedBy { it.key }
-                    .forEach { (libraryType, items) ->
-                        if (items.isNotEmpty()) {
-                            item {                                Text(
-                                    text = "Recently Added ${libraryType.capitalizeDesc()}",
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    ),
-                                    modifier = Modifier
-                                )
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    contentPadding = PaddingValues(horizontal = 48.dp)
-                                ) {
-                                    items(items) { mediaItem ->
-                                        RecentItemCard(
-                                            item = mediaItem,
-                                            serverUrl = serverUrl,
-                                            onItemClick = onItemClick,
-                                            onFocus = { focusedItem ->
-                                                backgroundImageUrl = focusedItem.getBackdropImageUrl(serverUrl ?: "")
-                                            }
-                                        )
-                                    }
+            // 3. Recently Added Sections per Library Type (THIRD)
+            // Filter out any "Episode" type to prevent confusion with "Recent TV Episodes"
+            recentlyAddedItemsMap.entries
+                .filter { it.key.lowercase() != "episode" } // Prevent episode confusion
+                .sortedBy { it.key }
+                .forEach { (libraryType, items) ->
+                    if (items.isNotEmpty()) {
+                        item {                                Text(
+                            text = "Recently Added ${libraryType.capitalizeDesc()}",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            ),
+                            modifier = Modifier
+                        )
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                contentPadding = PaddingValues(horizontal = 48.dp)
+                            ) {
+                                items(items) { mediaItem ->
+                                    RecentItemCard(
+                                        item = mediaItem,
+                                        serverUrl = serverUrl,
+                                        onItemClick = onItemClick,
+                                        onFocus = { focusedItem ->
+                                            backgroundImageUrl = focusedItem.getBackdropImageUrl(serverUrl ?: "")
+                                        }
+                                    )
                                 }
-                                Spacer(modifier = Modifier.height(32.dp))
                             }
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
-            }
+                }
+        }
         }
 
         // Error message overlay
@@ -282,7 +282,7 @@ fun String.capitalizeDesc(): String {
         "unknown" -> "Mixed Content"
         else -> this.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase() else it.toString()
-        }.let { 
+        }.let {
             if (it.endsWith("s")) it else "${it}s"
         }
     }

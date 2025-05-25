@@ -119,7 +119,13 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    fun getLibraryItems(libraryId: String): Flow<List<JellyfinItem>> = flow {
+    fun getLibraryItems(
+        libraryId: String,
+        sortBy: String? = null,
+        sortOrder: String? = null,
+        limit: Int? = null,
+        includeItemTypes: String? = null
+    ): Flow<List<JellyfinItem>> = flow {
         try {
             val retrofit = createRetrofit(serverUrl)
             val api = retrofit.create(JellyfinApiService::class.java)
@@ -127,10 +133,10 @@ class JellyfinRepository @Inject constructor(
             val items = api.getItems(
                 userId = userId,
                 parentId = libraryId,
-                sortBy = "DateCreated",
-                sortOrder = "Descending",
-                limit = 10,
-                includeItemTypes = null,
+                sortBy = sortBy ?: "DateCreated",
+                sortOrder = sortOrder ?: "Descending",
+                limit = limit ?: 10,
+                includeItemTypes = includeItemTypes,
                 authToken = accessToken
             )
             emit(items.Items)
@@ -151,10 +157,10 @@ class JellyfinRepository @Inject constructor(
             val response = api.getItems(
                 userId = userId,
                 parentId = libraryId,
-                sortBy = "SortName",
-                sortOrder = "Ascending",
-                limit = null,
-                includeItemTypes = null,
+                sortBy = sortBy ?: "DateCreated",
+                sortOrder = sortOrder ?: "Descending",
+                limit = limit ?: 10,
+                includeItemTypes = includeItemTypes,
                 authToken = accessToken
             )
             emit(response.Items)
@@ -175,7 +181,7 @@ class JellyfinRepository @Inject constructor(
             Log.d("JellyfinRepository", "Getting latest items from server with token: ${accessToken.take(10)}...")
             val latestItems = api.getLatestItems(
                 userId = userId,
-                limit = 10,
+                limit = limit ?: 10,
                 authToken = accessToken
             )
 
@@ -193,11 +199,11 @@ class JellyfinRepository @Inject constructor(
                 val api = createRetrofit(serverUrl).create(JellyfinApiService::class.java)
                 val response = api.getItems(
                     userId = userId,
-                    parentId = null,
-                    sortBy = "DateCreated",
-                    sortOrder = "Descending",
-                    limit = 10,
-                    includeItemTypes = "Movie,Series,Episode",
+                    parentId = libraryId,
+                    sortBy = sortBy ?: "DateCreated",
+                    sortOrder = sortOrder ?: "Descending",
+                    limit = limit ?: 10,
+                    includeItemTypes = includeItemTypes,
                     authToken = accessToken
                 )
                 emit(response.Items.filter { !it.getImageUrl(serverUrl).isNullOrEmpty() })
@@ -270,11 +276,11 @@ class JellyfinRepository @Inject constructor(
             // FIXED: Use the standard Items endpoint with proper sorting for library-specific recent items
             val response = api.getItems(
                 userId = userId,
-                parentId = libraryId, // This ensures we only get items from this library
-                sortBy = "DateCreated", // Sort by when items were added to the server
-                sortOrder = "Descending",
-                limit = 20,
-                includeItemTypes = "Movie,Series,Episode", // Only get media items, not folders
+                parentId = libraryId,
+                sortBy = sortBy ?: "DateCreated",
+                sortOrder = sortOrder ?: "Descending",
+                limit = limit ?: 10,
+                includeItemTypes = includeItemTypes,
                 authToken = accessToken
             )
 
@@ -306,8 +312,8 @@ class JellyfinRepository @Inject constructor(
             val response = api.getItemsWithImages(
                 userId = userId,
                 parentId = null, // Search all libraries
-                sortBy = "DateCreated", // Sort by when added to server
-                sortOrder = "Descending", // Most recent first
+                sortBy = sortBy ?: "DateCreated", // Sort by when added to server
+                sortOrder = sortOrder ?: "Descending", // Most recent first
                 limit = 8, // Get more to ensure we have enough movies after filtering
                 includeItemTypes = "Movie", // ✅ ONLY MOVIES - This is key!
                 authToken = accessToken
@@ -337,11 +343,11 @@ class JellyfinRepository @Inject constructor(
                 val api = createRetrofit(serverUrl).create(JellyfinApiService::class.java)
                 val response = api.getItems(
                     userId = userId,
-                    parentId = null,
-                    sortBy = "DateCreated",
-                    sortOrder = "Descending",
-                    limit = 8,
-                    includeItemTypes = "Movie", // ✅ EXPLICIT MOVIE FILTERING
+                    parentId = libraryId,
+                    sortBy = sortBy ?: "DateCreated",
+                    sortOrder = sortOrder ?: "Descending",
+                    limit = limit ?: 10,
+                    includeItemTypes = includeItemTypes,
                     authToken = accessToken
                 )
 
@@ -372,9 +378,9 @@ class JellyfinRepository @Inject constructor(
             val response = api.getItemsWithImages(
                 userId = userId,
                 parentId = null, // Search all libraries
-                sortBy = "DateCreated", // Sort by when episodes were added to server
-                sortOrder = "Descending", // Most recent first
-                limit = 10, // Last 10 episodes
+                sortBy = sortBy ?: "DateCreated", // Sort by when episodes were added to server
+                sortOrder = sortOrder ?: "Descending", // Most recent first
+                limit = limit ?: 10, // Last 10 episodes
                 includeItemTypes = "Episode", // Only episodes
                 authToken = accessToken
             )
@@ -397,5 +403,3 @@ class JellyfinRepository @Inject constructor(
         }
     }
 }
-
-
