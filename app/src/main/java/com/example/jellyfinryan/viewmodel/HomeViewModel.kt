@@ -71,16 +71,11 @@ class HomeViewModel @Inject constructor(
                         _isLoading.value = false
                     }
                 }
-
                 // Test 2: Load featured content
-                repository.getFeaturedItems().collect { featured ->
-                    android.util.Log.d(
-                        "HomeViewModel",
-                        "✅ SSL BYPASS SUCCESS: Featured content loaded - ${featured.size} items"
-                    )
-                    _featured.value = featured.take(8) // Limit to 8 for TV carousel
+                repository.getFeaturedMovies().collect { movies ->
+                    android.util.Log.d("HomeViewModel", "✅ Featured movies loaded - ${movies.size} movies")
+                    _featured.value = movies // This will be the last 3 movies
                 }
-
             } catch (e: Exception) {
                 android.util.Log.e("HomeViewModel", "❌ SSL BYPASS FAILED: ${e.message}", e)
                 _errorMessage.value = "Failed to load data: ${e.message}"
@@ -88,7 +83,6 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
-
     /**
      * Load items and recently added content for a specific library
      */

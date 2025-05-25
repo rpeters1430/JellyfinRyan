@@ -38,13 +38,14 @@ fun MyLibrariesSection(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(horizontal = 48.dp)
-        ) {            items(libraries) { library ->
-                HorizontalMediaCard(
+        ) {
+            items(libraries) { library ->
+                // FIXED: Use LibraryCard instead of HorizontalMediaCard to remove text overlay
+                LibraryCard(
                     item = library,
                     serverUrl = serverUrl,
                     onClick = { onLibraryClick(library.Id) },
                     onFocus = onLibraryFocus,
-                    modifier = Modifier.width(300.dp).height(180.dp), // Slightly larger for libraries
                     sdkRepository = sdkRepository
                 )
             }

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
@@ -26,7 +27,6 @@ import com.example.jellyfinryan.api.model.JellyfinItem
 import com.example.jellyfinryan.ui.components.FeaturedCarousel
 import com.example.jellyfinryan.ui.components.MyLibrariesSection
 import com.example.jellyfinryan.ui.components.RecentlyAddedSection
-import com.example.jellyfinryan.ui.components.LibraryRow
 import com.example.jellyfinryan.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -46,36 +46,43 @@ fun HomeScreen(
 
     var backgroundImageUrl by remember { mutableStateOf<String?>(null) }
 
+    // FIXED: Use Box with proper layering instead of overlay background
     Box(modifier = Modifier.fillMaxSize()) {
-        // Dynamic background
+        // Static background (lower z-index)
         backgroundImageUrl?.let { imageUrl ->
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(0f), // Ensure background stays behind
                 contentScale = ContentScale.Crop,
-                alpha = 0.3f
+                alpha = 0.2f // Reduced opacity so it doesn't interfere
             )
 
-            // Scrim overlay for better readability
+            // Lighter scrim overlay for better readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .zIndex(1f)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.8f),
-                                Color.Black.copy(alpha = 0.4f),
-                                Color.Black.copy(alpha = 0.8f)
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.6f)
                             )
                         )
-                    )            )
+                    )
+            )
         }
 
         // Loading state
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(2f),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -92,19 +99,22 @@ fun HomeScreen(
                     )
                 }
             }
-            return
+            return@Box
         }
 
         // Error state
         errorMessage?.let { error ->
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(2f),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(48.dp)                ) {
+                    modifier = Modifier.padding(48.dp)
+                ) {
                     Text(
                         text = "⚠️ Connection Error",
                         style = MaterialTheme.typography.headlineMedium,
@@ -121,32 +131,20 @@ fun HomeScreen(
                     ) {
                         Text("Retry")
                     }
-
-                    // 🧪 SSL TEST BUTTON (for debugging - remove after testing)
-                    Button(
-                        onClick = { viewModel.testSslBypassManual() },
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        Text("🧪 Test SSL Bypass")
-                    }
-
-                    Button(
-                        onClick = { viewModel.testImageUrls() },
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        Text("🖼️ Test Image URLs")
-                    }
                 }
             }
-            return
+            return@Box
         }
 
-        // Main content
+        // FIXED: Main content with proper z-index layering
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(32.dp), // Increased spacing for TV
-            contentPadding = PaddingValues(vertical = 40.dp) // Increased padding for TV
-        ) {            // Featured Carousel Section - Enhanced for TV with Anatomy feature
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(2f), // Content above background
+            verticalArrangement = Arrangement.spacedBy(24.dp), // Reduced spacing
+            contentPadding = PaddingValues(vertical = 0.dp) // FIXED: Remove top padding so carousel goes to top
+        ) {
+            // FIXED: Featured Carousel Section - Full width, goes to top of screen
             if (featured.isNotEmpty()) {
                 item {
                     FeaturedCarousel(
@@ -154,13 +152,17 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl) // Removed sdkRepository parameter
+                            backgroundImageUrl = item.getImageUrl(serverUrl)
                         },
-                        modifier = Modifier.height(600.dp), // Set height for carousel
-                        sdkRepository = null // Removed SDK repository dependency
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(600.dp), // Fixed height for carousel
+                        sdkRepository = null
                     )
                 }
-            }            // My Libraries Section - Horizontal cards
+            }
+
+            // My Libraries Section - Horizontal cards
             if (libraries.isNotEmpty()) {
                 item {
                     MyLibrariesSection(
@@ -168,40 +170,48 @@ fun HomeScreen(
                         serverUrl = serverUrl,
                         onLibraryClick = onBrowseLibrary,
                         onLibraryFocus = { library ->
-                            backgroundImageUrl = library.getImageUrl(serverUrl) // Removed sdkRepository parameter
+                            backgroundImageUrl = library.getImageUrl(serverUrl)
                         },
-                        sdkRepository = null // Removed SDK repository dependency
+                        sdkRepository = null
                     )
                 }
-            }            // Recently Added Sections for each library
+            }
+            // FIXED: Recently Added Sections for each library - should now show correct recent items
             items(libraries) { library ->
                 val recentItems = recentlyAddedItems[library.Id] ?: emptyList()
+
                 if (recentItems.isNotEmpty()) {
+                    // Determine section title based on library name and content type
+                    val sectionTitle = when {
+                        library.Name.contains("TV", ignoreCase = true) ||
+                                library.Name.contains("Show", ignoreCase = true) ||
+                                library.Name.contains("Series", ignoreCase = true) ->
+                            "Recently Added Episodes" // For TV libraries showing episodes
+
+                        library.Name.contains("Movie", ignoreCase = true) ->
+                            "Recently Added Movies" // For movie libraries
+
+                        library.Name.contains("Music", ignoreCase = true) ->
+                            "Recently Added Music" // For music libraries
+
+                        else -> "Recently Added in ${library.Name}" // Fallback with library name
+                    }
+
                     RecentlyAddedSection(
-                        title = "Recently Added in ${library.Name}",
+                        title = sectionTitle,
                         items = recentItems.take(15), // Show up to 15 items
                         serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl) // Removed sdkRepository parameter
+                            backgroundImageUrl = item.getImageUrl(serverUrl)
                         },
-                        sdkRepository = null // Removed SDK repository dependency
+                        sdkRepository = null
                     )
                 }
-            }            // Popular Content Section - Using vertical cards for variety
-            if (featured.isNotEmpty()) {
-                item {
-                    LibraryRow(
-                        title = "Popular This Week",
-                        items = featured.drop(3).take(10), // Use different featured items
-                        onItemClick = onItemClick,
-                        serverUrl = serverUrl,
-                        onItemFocus = { item ->
-                            backgroundImageUrl = item.getImageUrl(serverUrl) // Removed sdkRepository parameter
-                        },
-                        sdkRepository = null // Removed SDK repository dependency
-                    )
-                }
+            }
+            // Add some bottom padding for TV navigation
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
