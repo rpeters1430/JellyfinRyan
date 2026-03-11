@@ -30,7 +30,7 @@ lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.4"
 slf4jAndroid = "1.7.36"
 tvFoundation = "1.0.0-beta01"
-tvMaterial = "1.1.0-alpha01"
+tvMaterial = "1.1.0-beta01"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
