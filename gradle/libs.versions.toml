@@ -2,7 +2,7 @@
 agp = "9.1.0"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
-datastorePreferences = "1.2.0"
+datastorePreferences = "1.2.1"
 espressoCore = "3.7.0"
 hiltAndroid = "2.59.2"
 hiltAndroidCompiler = "2.59.2"
