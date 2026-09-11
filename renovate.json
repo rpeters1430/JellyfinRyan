@@ -5,7 +5,7 @@
   ],
   "timezone": "America/Los_Angeles",
   "schedule": [
-    "* 8-11 * * *"
+    "at any time"
   ],
   "automergeSchedule": [
     "* 12-15 * * *"
@@ -20,8 +20,29 @@
     "dependencies",
     "renovate"
   ],
-  "prConcurrentLimit": 5,
+  "prConcurrentLimit": 0,
   "packageRules": [
+    {
+      "description": "Create updates immediately and consolidate updates requiring manual review",
+      "matchPackageNames": [
+        "*"
+      ],
+      "minimumReleaseAge": "0 days",
+      "schedule": [
+        "at any time"
+      ],
+      "prCreation": "immediate",
+      "dependencyDashboardApproval": false,
+      "groupName": "Dependency updates requiring review",
+      "groupSlug": "dependencies-requiring-review",
+      "groupSingleUpdates": true,
+      "minimumGroupSize": 1,
+      "separateMajorMinor": false,
+      "separateMinorPatch": false,
+      "separateMultipleMajor": false,
+      "separateMultipleMinor": false,
+      "automerge": false
+    },
     {
       "description": "Group and automerge stable minor and patch updates",
       "matchUpdateTypes": [
@@ -32,8 +53,6 @@
       "groupName": "Safe non-major dependency updates",
       "groupSlug": "safe-non-major-dependencies",
       "groupSingleUpdates": true,
-      "minimumReleaseAge": "3 days",
-      "minimumReleaseAgeBehaviour": "timestamp-optional",
       "automerge": true,
       "automergeType": "pr"
     },
@@ -45,8 +64,6 @@
       "groupName": "Safe non-major dependency updates",
       "groupSlug": "safe-non-major-dependencies",
       "groupSingleUpdates": true,
-      "minimumReleaseAge": "3 days",
-      "minimumReleaseAgeBehaviour": "timestamp-optional",
       "automerge": true,
       "automergeType": "pr"
     },
@@ -61,10 +78,11 @@
       "groupName": "Safe non-major dependency updates",
       "groupSlug": "safe-non-major-dependencies",
       "groupSingleUpdates": true,
-      "minimumReleaseAge": "3 days",
-      "minimumReleaseAgeBehaviour": "timestamp-optional",
       "automerge": true,
       "automergeType": "pr"
     }
-  ]
+  ],
+  "minimumReleaseAge": "0 days",
+  "prCreation": "immediate",
+  "prHourlyLimit": 0
 }
